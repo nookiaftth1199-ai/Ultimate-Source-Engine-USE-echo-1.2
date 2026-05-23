@@ -1,0 +1,56 @@
+// ============================================================
+// Ultimate Source Engine - Camera Component
+// ============================================================
+//
+// Component that defines a camera. It uses the entity's transform
+// (from TransformComponent) to set the view matrix.
+// ============================================================
+
+#pragma once
+
+#include "stdafx.h"
+#include "Entity/Component.h"
+#include "Math/Matrix4.h"
+
+namespace USE {
+
+    class CameraComponent : public Component {
+    public:
+        CameraComponent();
+        virtual ~CameraComponent();
+
+        // Projection parameters
+        void SetPerspective(float fovY, float aspect, float nearZ, float farZ);
+        void SetOrthographic(float left, float right, float bottom, float top, float nearZ, float farZ);
+
+        // Check if projection is valid
+        bool IsProjectionValid() const { return m_projectionValid; }
+
+        // Get projection matrix (cached)
+        const Matrix4& GetProjectionMatrix() const { return m_projectionMatrix; }
+
+        // Get view matrix (calculated from entity's transform)
+        Matrix4 GetViewMatrix() const;
+
+        // Get combined view-projection matrix
+        Matrix4 GetViewProjectionMatrix() const { return GetProjectionMatrix() * GetViewMatrix(); }
+
+        // Type name
+        virtual const char* GetTypeName() const override { return "CameraComponent"; }
+
+    private:
+        Matrix4 m_projectionMatrix;
+        bool    m_projectionValid;
+        bool    m_isPerspective;
+
+        // Perspective params
+        float m_fovY;
+        float m_aspect;
+        float m_nearZ;
+        float m_farZ;
+
+        // Orthographic params
+        float m_left, m_right, m_bottom, m_top;
+    };
+
+} // namespace USE
