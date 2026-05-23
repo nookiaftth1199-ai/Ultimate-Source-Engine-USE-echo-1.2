@@ -1,0 +1,266 @@
+{
+  "ambientLight": [0.15, 0.15, 0.2, 1.0],
+  "skybox": "textures/skybox/sky_mario",
+  "entities": [
+    {
+      "name": "SunLight",
+      "components": [
+        {
+          "type": "Light",
+          "lightType": "Directional",
+          "color": [1.0, 0.95, 0.85, 1.0],
+          "intensity": 1.2,
+          "direction": [-0.5, -1.0, -0.3],
+          "castShadows": true
+        }
+      ]
+    },
+    {
+      "name": "Ground",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [0, -2.0, 0],
+          "rotation": [0,0,0,1],
+          "scale": [50, 1, 50]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/courtyard_ground.fbx",
+          "material": "materials/grass.json",
+          "castShadows": false,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "CastleMain",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [0, 0, 0],
+          "rotation": [0,0,0,1],
+          "scale": [1,1,1]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/castle_main.fbx",
+          "material": "materials/stone_castle.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "LeftTower",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [-8, 0, 4],
+          "rotation": [0,0,0,1],
+          "scale": [1,1,1]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/castle_tower.fbx",
+          "material": "materials/stone_castle.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "RightTower",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [8, 0, 4],
+          "rotation": [0,0,0,1],
+          "scale": [1,1,1]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/castle_tower.fbx",
+          "material": "materials/stone_castle.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "CentralTower",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [0, 6, -2],
+          "rotation": [0,0,0,1],
+          "scale": [1,1.5,1]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/castle_central_tower.fbx",
+          "material": "materials/stone_castle.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "Bridge",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [0, -1.2, 15],
+          "rotation": [0,0,0,1],
+          "scale": [4, 0.5, 8]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/stone_bridge.fbx",
+          "material": "materials/stone_castle.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "CastleDoor",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [0, 0.5, 6],
+          "rotation": [0,0,0,1],
+          "scale": [1,1,1]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/castle_door.fbx",
+          "material": "materials/wood_door.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "StarFlag",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [0, 9, -5],
+          "rotation": [0,0,0,1],
+          "scale": [1,1,1]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/star_flag.fbx",
+          "material": "materials/flag.json",
+          "castShadows": false,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "Tree1",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [-12, -1.5, -10],
+          "rotation": [0,0,0,1],
+          "scale": [1,1,1]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/tree.fbx",
+          "material": "materials/tree.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "Tree2",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [10, -1.5, -12],
+          "rotation": [0,0,0,1],
+          "scale": [1,1,1]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/tree.fbx",
+          "material": "materials/tree.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "PondWater",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [-6, -1.8, -8],
+          "rotation": [0,0,0,1],
+          "scale": [5, 0.1, 4]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/water_plane.fbx",
+          "material": "materials/water.json",
+          "castShadows": false,
+          "receiveShadows": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "WallLeft",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [-18, 0, -8],
+          "rotation": [0,0,0,1],
+          "scale": [1, 3, 20]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/castle_wall.fbx",
+          "material": "materials/stone_castle.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "WallRight",
+      "components": [
+        {
+          "type": "Transform",
+          "position": [18, 0, -8],
+          "rotation": [0,0,0,1],
+          "scale": [1, 3, 20]
+        },
+        {
+          "type": "Render",
+          "mesh": "models/castle_wall.fbx",
+          "material": "materials/stone_castle.json",
+          "castShadows": true,
+          "receiveShadows": true,
+          "visible": true
+        }
+      ]
+    }
+  ]
+}
