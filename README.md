@@ -1,169 +1,110 @@
-﻿# Ultimate Source Engine
+# Ultimate Source Engine (USE) – Echo 1.2
 
-**Version 1.2 “Echo”** – A lightweight, modular, cross‑platform 3D game engine for AAA‑quality games that run on both modern and older hardware.
+![Version](https://img.shields.io/badge/version-1.2.0_Echo-blue)
+![License](https://img.shields.io/badge/license-GPLv3-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20(planned)-lightgrey)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-blue)]()
-[![C++](https://img.shields.io/badge/C%2B%2B-11%2F14-blue.svg)]()
-
----
-
-## 🚀 Key Features
-
-- **Modern rendering** – Deferred+clustered, LPV dynamic GI, SSR, volumetric fog, CSM, TAA, planar reflections.
-- **High‑end graphics** – PBR (clear coat, sheen, anisotropy, SSS), node‑based material editor.
-- **Animation system** – Layered animation, montages, full‑body IK, motion matching, visual state machine editor.
-- **Physics** – Jolt, Bullet backends (PhysX removed). Rigid bodies, vehicles, cloth, destruction, soft bodies.
-- **Audio** – FMOD integration (optional), 3D positional sound, filters, streaming.
-- **AI** – Behaviour trees, navmesh (Recast/Detour), EQS, crowd simulation, tactical AI.
-- **Networking** – Client‑server, lag compensation, client prediction, dedicated server build.
-- **Developer console** – Source‑style console with CVars, commands, history, auto‑complete.
-- **Entity‑Component System** – High‑performance ECS with pools.
-- **Complete editor suite** – Level editor, material editor (node graph), animation editor (state machine), particle editor, asset browser.
-- **Project templates** – First‑person shooter, third‑person, physics puzzle, empty.
-- **Packaging** – Asset cooking, PAK generation, standalone executable + installer creation.
-- **Cross‑platform** – Windows (32/64), Linux, macOS, Android (experimental).
-- **Open source** – MIT license, no royalties, full source code.
+**The first 3D game engine built in Algeria.**  
+Modern graphics. Old hardware. Total freedom.
 
 ---
 
-## 🖥️ System Requirements
-
-| Role            | Minimum (to run games)                                 | Recommended (for development)               |
-|-----------------|--------------------------------------------------------|----------------------------------------------|
-| **CPU**         | 2‑core, 1.8 GHz (Intel Core 2 Duo / AMD Athlon II)    | 4‑core, 2.5 GHz                              |
-| **RAM**         | 2 GB                                                   | 8 GB                                         |
-| **GPU**         | DirectX 9.0c / OpenGL 2.0 with 512 MB VRAM             | DirectX 11 / Vulkan (GTX 960 or better)      |
-| **Storage**     | 2 GB free space                                        | SSD, 10 GB free space                        |
-| **OS**          | Windows 7 / Linux / macOS 10.14                        | Windows 10 / Ubuntu 20.04 / macOS 11         |
+<p align="center">
+  <img src="docs/screenshot_showcase.png" alt="USE Engine Screenshot" width="80%">
+</p>
 
 ---
 
-## 📦 Getting the Engine
+## 📖 Table of Contents
 
-Clone the repository:
-
-```bash
-git clone https://github.com/nookiaftth1199-ai/Ultimate-Source-Engine-USE-echo-1.2
-cd UltimateSourceEngine
-```
-
----
-
-## 🔧 Building from Source
-
-### Prerequisites
-
-- **CMake** ≥ 3.20
-- **Compiler** with C++11/14 support (Visual Studio 2015+, GCC 5+, Clang 3.4+)
-- **Git** (for automatic dependency fetching)
-
-### Windows (Visual Studio)
-
-```bash
-mkdir build && cd build
-cmake .. -G "Visual Studio 14 2015" -A Win32
-cmake --build . --config Release
-```
-
-### Linux / macOS
-
-```bash
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j4
-```
-
-### Build Options
-
-You can enable/disable subsystems via CMake options:
-
-```bash
-cmake .. -DUSE_JOLT=ON -DUSE_FMOD=ON -DUSE_EDITOR=ON
-```
-
-| Option | Description |
-|--------|-------------|
-| `USE_JOLT` | Use Jolt Physics backend (default ON) |
-| `USE_FMOD` | Use FMOD audio backend (default OFF – requires FMOD SDK) |
-| `USE_EDITOR` | Build editor tools (default ON) |
-| `USE_LAYERED_ANIMATION` | Enable layered animator (default ON) |
-| `USE_PLANAR_REFLECTIONS` | Enable planar reflections (default ON) |
+- [Why USE?](#-why-use)
+- [Features](#-features)
+- [System Requirements](#-system-requirements)
+- [Getting Started](#-getting-started)
+- [Documentation](#-documentation)
+- [Commercial Version (USE vsource)](#-commercial-version-use-vsource)
+- [License](#-license)
+- [Support & Community](#-support--community)
+- [Credits](#-credits)
 
 ---
 
-## 🎮 Creating a New Game
+## 🤔 Why USE?
 
-### Using the Editor
-
-1. Launch `USE_Tools.exe`.
-2. **File → New Project** → choose a template (FPS, ThirdPerson, etc.).
-3. Open the level editor, place entities, paint terrain, add lights.
-4. Press **Play** to test your game inside the editor.
-5. **File → Package Project** to build a standalone executable.
-
-### Manual (Code‑Only)
-
-Create a `CMakeLists.txt` in your project folder:
-
-```cmake
-project(MyGame)
-add_executable(MyGame Source/main.cpp)
-target_link_libraries(MyGame USE_Engine)
-```
-
-Then write your game (see [Documentation](DOCS/) for details).
+- **Lightning fast on old hardware** – Runs smoothly on a Core 2 Duo with integrated graphics, yet still delivers modern visual quality. No other engine supports such a range.
+- **Familiar Source‑like workflow** – If you've ever used Hammer, you'll feel right at home. Built for modders and level designers who love the classic pipeline.
+- **100% open‑source (GPLv3)** – Study, modify, and contribute. The engine belongs to the community.
+- **AAA features without the bloat** – Clustered forward rendering, PBR, dynamic shadows, volumetric fog, and a full post‑processing stack—all tuned to be lightweight.
+- **Networking built in** – Client‑server multiplayer with replication, RPCs, and Steam integration ready out of the box.
+- **First Algerian engine** – Built by a solo developer in Algeria, for the world. Your support means everything.
 
 ---
 
-## 📖 Documentation
+## ✨ Features
 
-- [API Reference](DOCS/API/) (generated by Doxygen)
-- [Building the Engine](DOCS/Tutorials/Building.md)
-- [Creating a Scene](DOCS/Tutorials/CreatingAScene.md)
-- [Writing Components](DOCS/Tutorials/WritingComponents.md)
-- [Release Notes](DOCS/ReleaseNotes_v1.2.md)
+### 🎨 Rendering
+- **Clustered Forward+** rendering – efficient lighting with hundreds of dynamic lights
+- **Deferred rendering** path available for complex scenes
+- **Cascaded Shadow Maps (CSM)** – high‑quality directional shadows
+- **Screen‑Space Reflections (SSR)**
+- **Volumetric Fog & Light Propagation Volumes (LPV)**
+- **Post‑Process Stack**: Depth of Field, Motion Blur, Color Grading, TAA, Dynamic Resolution
+- **PBR material system** with roughness/metallic workflow
+- Backends: **OpenGL**, **DirectX 9**, **Vulkan** (abstracted via `IRenderDevice`)
 
----
+### ⚙️ Engine Core
+- **Entity‑Component System (ECS)** with multi‑threaded job system
+- **Custom binary `.map` format** – combines BSP geometry with entity key‑value data
+- **PAK file system** for fast asset loading and archiving
+- **Memory management** with leak detection
+- **Lua & Python scripting** support
+- **Thread pool** for parallel task execution
 
-## 🤝 Contributing
+### 🏃 Animation & Physics
+- **Skeletal animation** with motion matching, blend trees, and layered animators
+- **IK solvers** for foot placement and look‑at
+- **Animation compression** (PCA) and montages
+- **Jolt Physics** (MIT) – character controller, vehicles, joints, ragdolls
+- Optional **Bullet** physics backend
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
+### 🔊 Audio
+- **Abstract audio interface** – switch between OpenAL and FMOD at compile time
+- 3D positional audio, environmental effects, music streaming
 
-### Coding Standards
+### 🌐 Networking
+- **Authoritative server** with client‑side prediction
+- **Delta compression** for low bandwidth usage
+- **RPCs, replicated variables**, and object replication
+- **Steamworks integration** for lobby and matchmaking
 
-- 4 spaces (no tabs)
-- `PascalCase` for classes, `camelCase` for variables
-- Use `USE_LOG_*` macros for logging
-- Keep C++14 features to a minimum for VS2015 compatibility
-
----
-
-## 📄 License
-
-Ultimate Source Engine is released under the **MIT License**. See `LICENSE` file for details.
-
----
-
-## 🙏 Acknowledgements
-
-- [SDL2](https://www.libsdl.org/) – window & input
-- [FMOD](https://www.fmod.com/) – audio (optional)
-- [Assimp](http://www.assimp.org/) – model loading
-- [Jolt Physics](https://github.com/jrouwe/JoltPhysics) – physics backend
-- [Recast/Detour](https://github.com/recastnavigation/recastnavigation) – navigation mesh
-- [Dear ImGui](https://github.com/ocornut/imgui) – editor UI
-- [nlohmann/json](https://github.com/nlohmann/json) – JSON parsing
-- [stb_image](https://github.com/nothings/stb) – texture loading
-
----
-
-## 📬 Contact
-
-Project maintainer: **El Kaboub Mouhamed Ishak**  
-GitHub: [@yourusername](https://github.com/yourusername)  
-Email: your.email@example.com
+### 🛠️ Editor & Tools
+- **World Editor** with transform gizmos, terrain sculpting, light placement
+- **Material Editor** with node graph and live shader compilation
+- **Animation Editor** – state machines, blend spaces, montage editing
+- **Forge Asset Manager** – live linking, dependency graphs, PAK builder
+- **Project Manager** – build settings, packaging, and wizard
+- **In‑editor Play Mode (PIE)** for instant testing
 
 ---
 
-*“The ultimate game engine is the one you build yourself.”*
+## 💻 System Requirements
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **OS** | Windows 7 SP1 (64‑bit) | Windows 10/11 (64‑bit) |
+| **CPU** | Dual‑core with SSE2 (Core 2 Duo) | Quad‑core 2.5 GHz+ |
+| **GPU** | DirectX 9.0c / OpenGL 2.0, 256 MB VRAM | OpenGL 3.3 / Vulkan 1.0, 1 GB VRAM |
+| **RAM** | 1 GB | 4 GB |
+| **Storage** | 500 MB HDD | 2 GB SSD |
+
+> **Linux**, **macOS**, **Android**, and **iOS** support is planned. Console export (PS5, Xbox, Switch) is available via the commercial version.
+
+---
+
+## 🚀 Getting Started
+
+### Option A: Use Visual Studio (quick)
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/nookiaftth1199-ai/Ultimate-Source-Engine-USE-echo-1.2.git
