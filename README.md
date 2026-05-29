@@ -1,3 +1,4 @@
+
 # Ultimate Source Engine (USE) – Echo 1.2
 
 ![Version](https://img.shields.io/badge/version-1.2.0_Echo-blue)
@@ -108,3 +109,103 @@ Modern graphics. Old hardware. Total freedom.
 1. Clone the repository:
    ```bash
    git clone https://github.com/nookiaftth1199-ai/Ultimate-Source-Engine-USE-echo-1.2.git
+   ```
+2. Open `UltimateSourceEngine.sln` in Visual Studio 2015 or newer.
+3. Select `Release` configuration, `x64` platform.
+4. Build the solution. The editor `USE_Tools.exe` will appear in `BUILD/bin/`.
+
+### Option B: CMake (cross‑platform)
+```bash
+cd UltimateSourceEngine
+cmake -B BUILD -G "Visual Studio 14 2015" -A x64
+cmake --build BUILD --config Release
+```
+
+For Linux/macOS (once supported), use the appropriate generator.
+
+---
+
+## 📚 Documentation
+
+Full guides and references live in the [`DOCS/`](DOCS/) folder:
+- [Tutorials](DOCS/Tutorials/) – step‑by‑step for beginners
+- [Reference](DOCS/Reference/) – detailed subsystem APIs
+- [Release Notes](DOCS/ReleaseNotes/) – what’s new in each version
+- [Contributing](DOCS/Contributing/) – coding standards, pull request process
+- [FAQ](DOCS/FAQ.md)
+
+---
+
+## 💎 Commercial Version (USE vsource)
+
+**USE vsource** is a premium, closed‑source fork for professional studios.  
+It adds:
+
+- 🎮 **Console export** – PlayStation 5, Xbox Series X/S, Nintendo Switch (requires platform SDKs)
+- 🌍 **Voxel Cone Tracing GI** – fully dynamic global illumination
+- 🧊 **Meshlet Pipeline** – GPU‑driven rendering for massive geometric detail
+- 🤖 **Learned Motion Matching** – AAA character animation
+- 🛠️ **Profiler Window & Console Export Wizard**
+- 📜 **Royalty‑free commercial license** – no 5% cut like Unreal Engine
+
+| Tier | One‑time Price |
+|------|----------------|
+| 🥉 Indie | **$99** |
+| 🥇 Studio | **$1,850** |
+
+📧 Contact: `your.email@example.com` for inquiries or purchase.
+
+---
+
+## ⚖️ License
+
+- **USE 1.2 (Echo)** is released under the **GNU General Public License v3.0**.  
+  You are free to use, modify, and distribute the code, provided you keep your project open‑source under the same license.
+
+- **USE vsource** is sold under a **commercial EULA** that allows closed‑source distribution and console support. See [`COMMERCIAL_LICENSE.txt`](COMMERCIAL_LICENSE.txt) for reference.
+
+---
+
+## ❤️ Support & Community
+
+Your support keeps this engine alive and growing. Here’s how you can help:
+
+- ☕ [Buy me a coffee on Ko‑fi](https://ko-fi.com/yourpage) (one‑time donation)
+- 💖 [GitHub Sponsors](https://github.com/sponsors/nookiaftth1199-ai) (monthly)
+- 🐛 [Report bugs](https://github.com/nookiaftth1199-ai/Ultimate-Source-Engine-USE-echo-1.2/issues)
+- ⭐ Star the repo if you find it useful!
+- 💬 Join the [Discord server](https://discord.gg/yourlink) for help and discussions
+
+---
+
+## 🌟 Credits
+
+**Ultimate Source Engine** is built and maintained by **El Kaboub Mohamed Ishak**  
+from **Algeria**, with the invaluable help of the open‑source community.
+
+Special thanks to:
+- [SDL2](https://www.libsdl.org/) for cross‑platform windowing and input
+- [Assimp](https://www.assimp.org/) for model importing
+- [Jolt Physics](https://github.com/jrouwe/JoltPhysics) for high‑performance physics
+- [Dear ImGui](https://github.com/ocornut/imgui) for the editor UI
+- [OpenAL Soft](https://openal-soft.org/) for audio
+- [Lua](https://www.lua.org/) and [Python](https://www.python.org/) for scripting
+- And many others who made this possible.
+
+---
+
+<p align="center">
+  Made with 🇩🇿 in Algeria
+</p>
+```
+
+**What I improved compared to the previous version:**
+
+- 🧱 **Badges** at the top for instant trust signals (version, license, platform).
+- 📸 **Screenshot placeholder** – you can drop a real image later.
+- ⚡ **Emojis and clean table** of contents for scannability.
+- 🔥 **“Why USE?” section** that sells the engine’s unique value.
+- 🎯 **Feature lists** are grouped, more visual, and easier to digest.
+- 💸 **Clear vsource pricing** and commercial call‑to‑action.
+- 🤝 **Support & Community** section encourages stars, donations, and Discord join.
+- 🇩🇿 **Proudly made in Algeria** footer.
