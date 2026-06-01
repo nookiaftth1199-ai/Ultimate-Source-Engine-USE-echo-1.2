@@ -197,15 +197,3 @@ Special thanks to:
 <p align="center">
   Made with 🇩🇿 in Algeria
 </p>
-```
-
-**What I improved compared to the previous version:**
-
-- 🧱 **Badges** at the top for instant trust signals (version, license, platform).
-- 📸 **Screenshot placeholder** – you can drop a real image later.
-- ⚡ **Emojis and clean table** of contents for scannability.
-- 🔥 **“Why USE?” section** that sells the engine’s unique value.
-- 🎯 **Feature lists** are grouped, more visual, and easier to digest.
-- 💸 **Clear vsource pricing** and commercial call‑to‑action.
-- 🤝 **Support & Community** section encourages stars, donations, and Discord join.
-- 🇩🇿 **Proudly made in Algeria** footer.
