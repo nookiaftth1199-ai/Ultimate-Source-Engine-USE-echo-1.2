@@ -1,321 +1,223 @@
-// ============================================================
-// Ultimate Source Engine - OpenGL Render Device Implementation
-// ============================================================
-
 #include "stdafx.h"
 #include "GLDevice.h"
-#include "Core/Window.h"
 #include "Core/Logger.h"
 
-#ifdef _WIN32
-    #include <windows.h>
-#endif
-#include <GL/gl.h>
-#include <GL/glu.h>
+namespace USE
+{
+	GLDevice::GLDevice() = default;
+	GLDevice::~GLDevice() { Shutdown(); }
 
-namespace USE {
+	bool GLDevice::Initialize(void* windowHandle, uint32_t width, uint32_t height, bool vsync)
+	{
+		m_window = static_cast<SDL_Window*>(windowHandle);
+		if (!m_window) return false;
 
-    GLDevice::GLDevice()
-        : m_context(nullptr)
-        , m_window(nullptr)
-        , m_initialized(false)
-    {
-        USE_LOG_INFO("GLDevice created.");
-    }
+		m_width = width;
+		m_height = height;
 
-    GLDevice::~GLDevice()
-    {
-        Shutdown();
-    }
+		m_context = SDL_GL_GetCurrentContext();
+		if (!m_context)
+		{
+			USE_LOG_ERROR("GLDevice: No current OpenGL context.");
+			return false;
+		}
 
-    bool GLDevice::Initialize(Window* window, bool vsync)
-    {
-        if (m_initialized) {
-            USE_LOG_WARN("GLDevice already initialized.");
-            return true;
-        }
+		SDL_GL_SetSwapInterval(vsync ? 1 : 0);
+		glViewport(0, 0, width, height);
 
-        USE_LOG_INFO("Initializing OpenGL device...");
+		m_initialized = true;
+		USE_LOG_INFO("GLDevice initialized (%u x %u).", width, height);
+		return true;
+	}
 
-        // Get SDL window handle (assuming Window is SDLWindow)
-        // We need a way to get the native SDL_Window*; let's assume Window has a GetSDLWindow() method.
-        // If not, we need to cast. For simplicity, we'll add a virtual method GetNativeHandle() returning void*.
-        m_window = reinterpret_cast<SDL_Window*>(window->GetNativeHandle());
-        if (!m_window) {
-            USE_LOG_ERROR("Failed to get native window handle.");
-            return false;
-        }
+	void GLDevice::Shutdown()
+	{
+		for (auto& p : m_buffers)  glDeleteBuffers(1, &p.second);
+		for (auto& p : m_textures) glDeleteTextures(1, &p.second);
+		for (auto& p : m_shaders)  glDeleteShader(p.second);
+		for (auto& p : m_programs) glDeleteProgram(p.second);
+		m_buffers.clear();
+		m_textures.clear();
+		m_shaders.clear();
+		m_programs.clear();
+		m_initialized = false;
+	}
 
-        // Create OpenGL context
-        m_context = SDL_GL_CreateContext(m_window);
-        if (!m_context) {
-            USE_LOG_ERROR("SDL_GL_CreateContext failed: %s", SDL_GetError());
-            return false;
-        }
+	void GLDevice::ResizeBackBuffer(uint32_t w, uint32_t h) { m_width = w; m_height = h; glViewport(0, 0, w, h); }
+	void GLDevice::BeginFrame() {}
+	void GLDevice::EndFrame() {}
+	void GLDevice::Present() { SDL_GL_SwapWindow(m_window); }
 
-        // Set VSync
-        if (vsync) {
-            if (SDL_GL_SetSwapInterval(1) != 0) {
-                USE_LOG_WARN("VSync not supported: %s", SDL_GetError());
-            }
-        } else {
-            SDL_GL_SetSwapInterval(0);
-        }
+	void GLDevice::SetViewport(uint32_t x, uint32_t y, uint32_t w, uint32_t h) { glViewport(x, y, w, h); }
+	void GLDevice::SetScissorRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h) { glScissor(x, y, w, h); glEnable(GL_SCISSOR_TEST); }
 
-        // Print OpenGL info
-        USE_LOG_INFO("OpenGL Vendor: %s", glGetString(GL_VENDOR));
-        USE_LOG_INFO("OpenGL Renderer: %s", glGetString(GL_RENDERER));
-        USE_LOG_INFO("OpenGL Version: %s", glGetString(GL_VERSION));
+	void GLDevice::SetDepthStencilState(bool test, bool write) {
+		if (test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+		glDepthMask(write ? GL_TRUE : GL_FALSE);
+	}
 
-        // Initialize basic OpenGL state
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClearDepth(1.0f);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CCW);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	void GLDevice::SetRasterizerState(bool cull, bool wire) {
+		if (cull) { glEnable(GL_CULL_FACE); glCullFace(GL_BACK); }
+		else glDisable(GL_CULL_FACE);
+		glPolygonMode(GL_FRONT_AND_BACK, wire ? GL_LINE : GL_FILL);
+	}
 
-        CheckGLError("Initialize");
+	void GLDevice::SetBlendState(bool en) {
+		if (en) { glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); }
+		else glDisable(GL_BLEND);
+	}
 
-        m_initialized = true;
-        USE_LOG_INFO("OpenGL device initialized successfully.");
-        return true;
-    }
+	void GLDevice::Clear(bool color, bool depth, bool stencil, const Vector4& cc, float cd, uint8_t cs) {
+		GLbitfield mask = 0;
+		if (color) { glClearColor(cc.x, cc.y, cc.z, cc.w); mask |= GL_COLOR_BUFFER_BIT; }
+		if (depth) { glClearDepth(cd); mask |= GL_DEPTH_BUFFER_BIT; }
+		if (stencil) { glClearStencil(cs); mask |= GL_STENCIL_BUFFER_BIT; }
+		if (mask) glClear(mask);
+	}
 
-    void GLDevice::Shutdown()
-    {
-        if (!m_initialized) return;
+	void GLDevice::Draw(PrimitiveType type, uint32_t count, uint32_t start) {
+		GLenum mode = GL_TRIANGLES;
+		switch (type) {
+		case PrimitiveType::Triangles:     mode = GL_TRIANGLES; break;
+		case PrimitiveType::TriangleStrip: mode = GL_TRIANGLE_STRIP; break;
+		case PrimitiveType::Lines:         mode = GL_LINES; break;
+		case PrimitiveType::LineStrip:     mode = GL_LINE_STRIP; break;
+		case PrimitiveType::Points:        mode = GL_POINTS; break;
+		}
+		glDrawArrays(mode, start, count);
+	}
 
-        USE_LOG_INFO("Shutting down OpenGL device...");
+	void GLDevice::DrawIndexed(PrimitiveType type, uint32_t count, uint32_t start, uint32_t) {
+		GLenum mode = GL_TRIANGLES;
+		switch (type) {
+		case PrimitiveType::Triangles:     mode = GL_TRIANGLES; break;
+		case PrimitiveType::TriangleStrip: mode = GL_TRIANGLE_STRIP; break;
+		case PrimitiveType::Lines:         mode = GL_LINES; break;
+		case PrimitiveType::LineStrip:     mode = GL_LINE_STRIP; break;
+		case PrimitiveType::Points:        mode = GL_POINTS; break;
+		}
+		glDrawElements(mode, count, GL_UNSIGNED_INT, (void*)(start * sizeof(uint32_t)));
+	}
 
-        if (m_context) {
-            SDL_GL_DeleteContext(m_context);
-            m_context = nullptr;
-        }
+	uint32_t GLDevice::CreateVertexBuffer(const void* data, uint32_t size, BufferUsage usage) {
+		GLuint buf;
+		glGenBuffers(1, &buf);
+		glBindBuffer(GL_ARRAY_BUFFER, buf);
+		glBufferData(GL_ARRAY_BUFFER, size, data, (usage == BufferUsage::Dynamic) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+		uint32_t handle = AllocHandle(); m_buffers[handle] = buf; return handle;
+	}
 
-        m_initialized = false;
-        USE_LOG_INFO("OpenGL device shut down.");
-    }
+	uint32_t GLDevice::CreateIndexBuffer(const void* data, uint32_t size, BufferUsage usage, bool) {
+		GLuint buf;
+		glGenBuffers(1, &buf);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, (usage == BufferUsage::Dynamic) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+		uint32_t handle = AllocHandle(); m_buffers[handle] = buf; return handle;
+	}
 
-    void GLDevice::BeginFrame()
-    {
-        // Nothing special for OpenGL
-    }
+	uint32_t GLDevice::CreateTexture2D(uint32_t w, uint32_t h, uint32_t, TextureFormat fmt, const void* data) {
+		GLuint tex;
+		glGenTextures(1, &tex);
+		glBindTexture(GL_TEXTURE_2D, tex);
+		GLenum internalFormat = (fmt == TextureFormat::R8G8B8A8_UNORM) ? GL_RGBA8 : GL_RGBA;
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		uint32_t handle = AllocHandle(); m_textures[handle] = tex; return handle;
+	}
 
-    void GLDevice::EndFrame()
-    {
-        // Nothing special
-    }
+	uint32_t GLDevice::CreateShader(ShaderType type, const std::string& source, const std::string&) {
+		GLenum glType = (type == ShaderType::Vertex) ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER;
+		GLuint shader = glCreateShader(glType);
+		const char* src = source.c_str();
+		glShaderSource(shader, 1, &src, nullptr);
+		glCompileShader(shader);
+		GLint status;
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+		if (!status) {
+			char log[512];
+			glGetShaderInfoLog(shader, 512, nullptr, log);
+			USE_LOG_ERROR("GLDevice: Shader compile error: %s", log);
+			glDeleteShader(shader);
+			return 0;
+		}
+		uint32_t handle = AllocHandle(); m_shaders[handle] = shader; return handle;
+	}
 
-    void GLDevice::Present()
-    {
-        if (m_window) {
-            SDL_GL_SwapWindow(m_window);
-        }
-    }
+	uint32_t GLDevice::CreateProgram(const std::vector<uint32_t>& shaders) {
+		GLuint prog = glCreateProgram();
+		for (uint32_t sh : shaders) {
+			auto it = m_shaders.find(sh);
+			if (it != m_shaders.end()) glAttachShader(prog, it->second);
+		}
+		glLinkProgram(prog);
+		GLint status;
+		glGetProgramiv(prog, GL_LINK_STATUS, &status);
+		if (!status) {
+			char log[512];
+			glGetProgramInfoLog(prog, 512, nullptr, log);
+			USE_LOG_ERROR("GLDevice: Program link error: %s", log);
+			glDeleteProgram(prog);
+			return 0;
+		}
+		uint32_t handle = AllocHandle(); m_programs[handle] = prog; return handle;
+	}
 
-    void GLDevice::Clear(uint32_t flags, const Color& color, float depth, uint32_t stencil)
-    {
-        GLbitfield glFlags = 0;
-        if (flags & CLEAR_COLOR) {
-            glClearColor(color.r, color.g, color.b, color.a);
-            glFlags |= GL_COLOR_BUFFER_BIT;
-        }
-        if (flags & CLEAR_DEPTH) {
-            glClearDepth(depth);
-            glFlags |= GL_DEPTH_BUFFER_BIT;
-        }
-        if (flags & CLEAR_STENCIL) {
-            glClearStencil(stencil);
-            glFlags |= GL_STENCIL_BUFFER_BIT;
-        }
-        glClear(glFlags);
-        CheckGLError("Clear");
-    }
+	void GLDevice::SetVertexBuffer(uint32_t handle, uint32_t, uint32_t, uint32_t) {
+		auto it = m_buffers.find(handle);
+		if (it != m_buffers.end()) glBindBuffer(GL_ARRAY_BUFFER, it->second);
+	}
 
-    void GLDevice::SetViewport(int x, int y, int width, int height)
-    {
-        glViewport(x, y, width, height);
-        CheckGLError("SetViewport");
-    }
+	void GLDevice::SetIndexBuffer(uint32_t handle, bool) {
+		auto it = m_buffers.find(handle);
+		if (it != m_buffers.end()) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, it->second);
+	}
 
-    void GLDevice::SetScissorRect(int x, int y, int width, int height)
-    {
-        glScissor(x, y, width, height);
-        CheckGLError("SetScissorRect");
-    }
+	void GLDevice::SetTexture(uint32_t handle, uint32_t slot) {
+		glActiveTexture(GL_TEXTURE0 + slot);
+		auto it = m_textures.find(handle);
+		if (it != m_textures.end()) glBindTexture(GL_TEXTURE_2D, it->second);
+		else glBindTexture(GL_TEXTURE_2D, 0);
+	}
 
-    void GLDevice::EnableScissor(bool enable)
-    {
-        if (enable)
-            glEnable(GL_SCISSOR_TEST);
-        else
-            glDisable(GL_SCISSOR_TEST);
-    }
+	void GLDevice::SetProgram(uint32_t handle) {
+		auto it = m_programs.find(handle);
+		glUseProgram(it != m_programs.end() ? it->second : 0);
+	}
 
-    void GLDevice::DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation)
-    {
-        // This is a simplified implementation. In a real engine, you'd have vertex/index buffers bound.
-        // For now, we just draw with immediate mode or assume buffers are bound.
-        // We'll need to have the vertex/index buffer handles stored and bound before this call.
-        // Since we don't have that, we'll just issue a placeholder.
-        // In practice, you'd call glDrawElements with bound buffers.
+	void GLDevice::UpdateBuffer(uint32_t handle, const void* data, uint32_t size) {
+		auto it = m_buffers.find(handle);
+		if (it != m_buffers.end()) {
+			glBindBuffer(GL_ARRAY_BUFFER, it->second);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
+		}
+	}
 
-        // For demonstration, we'll just draw a simple triangle with immediate mode.
-        // But that's not correct for indexed drawing with buffers. We'll assume buffers are bound.
-        // We'll use glDrawElements, which requires GL_ELEMENT_ARRAY_BUFFER bound.
-        // We'll need to track currently bound index buffer.
-        // To keep it simple, we'll just call glDrawElements with a dummy call.
-        // This will cause an error if no buffer is bound. So we'll check.
+	void GLDevice::UpdateTexture(uint32_t handle, uint32_t, const void* data) {
+		auto it = m_textures.find(handle);
+		if (it != m_textures.end()) {
+			glBindTexture(GL_TEXTURE_2D, it->second);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+	}
 
-        // For OpenGL 2.0, we can use glDrawElements with client-side vertex arrays or VBOs.
-        // We'll assume VBOs are used and bound.
+	void GLDevice::DestroyBuffer(uint32_t handle) {
+		auto it = m_buffers.find(handle);
+		if (it != m_buffers.end()) { glDeleteBuffers(1, &it->second); m_buffers.erase(it); }
+	}
 
-        // For now, we'll just log an error if no buffers are bound.
-        USE_LOG_WARN("DrawIndexed called but not fully implemented.");
-    }
+	void GLDevice::DestroyTexture(uint32_t handle) {
+		auto it = m_textures.find(handle);
+		if (it != m_textures.end()) { glDeleteTextures(1, &it->second); m_textures.erase(it); }
+	}
 
-    bool GLDevice::CreateVertexBuffer(const void* data, size_t size, uint32_t& bufferHandle)
-    {
-        GLuint vbo;
-        glGenBuffers(1, &vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        bufferHandle = static_cast<uint32_t>(vbo);
-        CheckGLError("CreateVertexBuffer");
-        return true;
-    }
+	void GLDevice::DestroyShader(uint32_t handle) {
+		auto it = m_shaders.find(handle);
+		if (it != m_shaders.end()) { glDeleteShader(it->second); m_shaders.erase(it); }
+	}
 
-    bool GLDevice::CreateIndexBuffer(const void* data, size_t size, uint32_t& bufferHandle)
-    {
-        GLuint ibo;
-        glGenBuffers(1, &ibo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        bufferHandle = static_cast<uint32_t>(ibo);
-        CheckGLError("CreateIndexBuffer");
-        return true;
-    }
-
-    bool GLDevice::CreateTexture2D(int width, int height, TextureFormat format, const void* data, uint32_t& textureHandle)
-    {
-        GLuint tex;
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
-
-        // Convert TextureFormat to OpenGL internal format and pixel format
-        GLint internalFormat = GL_RGBA;
-        GLenum pixelFormat = GL_RGBA;
-        GLenum pixelType = GL_UNSIGNED_BYTE;
-
-        // For simplicity, assume RGBA8 for now. We'll add a switch later.
-        // TODO: map TextureFormat to OpenGL constants.
-
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0,
-                     pixelFormat, pixelType, data);
-
-        // Set default texture parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-        textureHandle = static_cast<uint32_t>(tex);
-        CheckGLError("CreateTexture2D");
-        return true;
-    }
-
-    bool GLDevice::CreateShader(ShaderType type, const char* source, uint32_t& shaderHandle)
-    {
-        GLenum glShaderType;
-        switch (type) {
-            case ShaderType::Vertex:   glShaderType = GL_VERTEX_SHADER; break;
-            case ShaderType::Pixel:    glShaderType = GL_FRAGMENT_SHADER; break;
-            default:
-                USE_LOG_ERROR("Unsupported shader type for OpenGL 2.0");
-                return false;
-        }
-
-        GLuint shader = glCreateShader(glShaderType);
-        glShaderSource(shader, 1, &source, nullptr);
-        glCompileShader(shader);
-
-        // Check compile status
-        GLint compiled;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-        if (!compiled) {
-            GLint infoLen = 0;
-            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
-            if (infoLen > 1) {
-                char* infoLog = new char[infoLen];
-                glGetShaderInfoLog(shader, infoLen, nullptr, infoLog);
-                USE_LOG_ERROR("Shader compile error: %s", infoLog);
-                delete[] infoLog;
-            }
-            glDeleteShader(shader);
-            return false;
-        }
-
-        shaderHandle = static_cast<uint32_t>(shader);
-        CheckGLError("CreateShader");
-        return true;
-    }
-
-    void GLDevice::DestroyBuffer(uint32_t handle)
-    {
-        GLuint buffer = static_cast<GLuint>(handle);
-        glDeleteBuffers(1, &buffer);
-    }
-
-    void GLDevice::DestroyTexture(uint32_t handle)
-    {
-        GLuint tex = static_cast<GLuint>(handle);
-        glDeleteTextures(1, &tex);
-    }
-
-    void GLDevice::DestroyShader(uint32_t handle)
-    {
-        GLuint shader = static_cast<GLuint>(handle);
-        glDeleteShader(shader);
-    }
-
-    const char* GLDevice::GetVendor() const
-    {
-        return reinterpret_cast<const char*>(glGetString(GL_VENDOR));
-    }
-
-    const char* GLDevice::GetRenderer() const
-    {
-        return reinterpret_cast<const char*>(glGetString(GL_RENDERER));
-    }
-
-    const char* GLDevice::GetVersion() const
-    {
-        return reinterpret_cast<const char*>(glGetString(GL_VERSION));
-    }
-
-    void GLDevice::CheckGLError(const char* context)
-    {
-        GLenum err = glGetError();
-        if (err != GL_NO_ERROR) {
-            const char* errStr = "Unknown error";
-            switch (err) {
-                case GL_INVALID_ENUM: errStr = "GL_INVALID_ENUM"; break;
-                case GL_INVALID_VALUE: errStr = "GL_INVALID_VALUE"; break;
-                case GL_INVALID_OPERATION: errStr = "GL_INVALID_OPERATION"; break;
-                case GL_STACK_OVERFLOW: errStr = "GL_STACK_OVERFLOW"; break;
-                case GL_STACK_UNDERFLOW: errStr = "GL_STACK_UNDERFLOW"; break;
-                case GL_OUT_OF_MEMORY: errStr = "GL_OUT_OF_MEMORY"; break;
-                case GL_INVALID_FRAMEBUFFER_OPERATION: errStr = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
-            }
-            USE_LOG_WARN("OpenGL error in %s: %s (0x%04X)", context, errStr, err);
-        }
-    }
-
-} // namespace USE
+	void GLDevice::DestroyProgram(uint32_t handle) {
+		auto it = m_programs.find(handle);
+		if (it != m_programs.end()) { glDeleteProgram(it->second); m_programs.erase(it); }
+	}
+}

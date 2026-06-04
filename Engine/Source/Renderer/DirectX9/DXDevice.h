@@ -1,61 +1,103 @@
 // ============================================================
-// Ultimate Source Engine - DirectX 9 Render Device
+// Ultimate Source Engine – DirectX 9 Render Device
 // ============================================================
-//
-// Implements the IRenderDevice interface using DirectX 9.0c.
-// Provides rendering context management and low-level drawing.
-// ============================================================
-
 #pragma once
 
-#include "stdafx.h"
-#include "Renderer/IRenderDevice.h"
-#include "Math/Color.h"
-#include "Math/Matrix4.h"
+#include "../IRenderDevice.h"
 #include <d3d9.h>
-#include <d3dx9.h>
+#include <unordered_map>
 
-namespace USE {
+namespace USE
+{
+	class DXDevice : public IRenderDevice
+	{
+	public:
+		DXDevice();
+		~DXDevice() override;
 
-    class DXDevice : public IRenderDevice {
-    public:
-        DXDevice();
-        virtual ~DXDevice();
+		bool Initialize(void* windowHandle, uint32_t width, uint32_t height, bool vsync) override;
+		void Shutdown() override;
+		void ResizeBackBuffer(uint32_t width, uint32_t height) override;
 
-        // IRenderDevice implementation
-        bool Initialize(Window* window, bool vsync) override;
-        void Shutdown() override;
+		void BeginFrame() override;
+		void EndFrame() override;
+		void Present() override;
 
-        void BeginFrame() override;
-        void EndFrame() override;
-        void Present() override;
+		void SetViewport(uint32_t x, uint32_t y, uint32_t w, uint32_t h) override;
+		void SetScissorRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h) override;
+		void SetDepthStencilState(bool depthTest, bool depthWrite) override;
+		void SetRasterizerState(bool cullBackFaces, bool wireframe) override;
+		void SetBlendState(bool enable) override;
 
-        void Clear(uint32_t flags, const Color& color, float depth, uint32_t stencil) override;
-        void SetViewport(int x, int y, int width, int height) override;
-        void SetScissorRect(int x, int y, int width, int height) override;
-        void EnableScissor(bool enable) override;
+		void Clear(bool color, bool depth, bool stencil,
+			const Vector4& clearColor, float clearDepth, uint8_t clearStencil) override;
 
-        void DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
+		void Draw(PrimitiveType type, uint32_t vertexCount, uint32_t startVertex = 0) override;
+		void DrawIndexed(PrimitiveType type, uint32_t indexCount, uint32_t startIndex = 0,
+			uint32_t baseVertex = 0) override;
+		void DrawInstanced(PrimitiveType type, uint32_t vertexCountPerInstance,
+			uint32_t instanceCount, uint32_t startVertex = 0,
+			uint32_t startInstance = 0) override {}
+		void DrawIndexedInstanced(PrimitiveType type, uint32_t indexCountPerInstance,
+			uint32_t instanceCount, uint32_t startIndex = 0,
+			uint32_t baseVertex = 0,
+			uint32_t startInstance = 0) override {}
+		void DrawIndirect(BufferType buffer, uint32_t offset) override {}
 
-        // Resource creation
-        bool CreateVertexBuffer(const void* data, size_t size, uint32_t& bufferHandle) override;
-        bool CreateIndexBuffer(const void* data, size_t size, uint32_t& bufferHandle) override;
-        bool CreateTexture2D(int width, int height, TextureFormat format, const void* data, uint32_t& textureHandle) override;
-        bool CreateShader(ShaderType type, const char* source, uint32_t& shaderHandle) override;
+		void Dispatch(uint32_t groupX, uint32_t groupY, uint32_t groupZ) override {}
 
-        void DestroyBuffer(uint32_t handle) override;
-        void DestroyTexture(uint32_t handle) override;
-        void DestroyShader(uint32_t handle) override;
+		// Resource creation (stubs – real implementation would use D3D resources)
+		uint32_t CreateVertexBuffer(const void* data, uint32_t size, BufferUsage usage) override { return 0; }
+		uint32_t CreateIndexBuffer(const void* data, uint32_t size, BufferUsage usage, bool is32Bit) override { return 0; }
+		uint32_t CreateConstantBuffer(uint32_t size) override { return 0; }
+		uint32_t CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t count,
+			BufferUsage usage) override {
+			return 0;
+		}
+		uint32_t CreateTexture2D(uint32_t width, uint32_t height, uint32_t mipLevels,
+			TextureFormat format, const void* data) override {
+			return 0;
+		}
+		uint32_t CreateRenderTarget(uint32_t width, uint32_t height, TextureFormat format,
+			bool createDepthStencil) override {
+			return 0;
+		}
+		uint32_t CreateDepthStencil(uint32_t width, uint32_t height, TextureFormat format) override { return 0; }
+		uint32_t CreateShader(ShaderType type, const std::string& source,
+			const std::string& entryPoint) override {
+			return 0;
+		}
+		uint32_t CreateProgram(const std::vector<uint32_t>& shaderHandles) override { return 0; }
+		uint32_t CreateVertexDeclaration(const std::vector<VertexElement>& elements) override { return 0; }
 
-        // Additional DirectX‑specific accessor
-        IDirect3DDevice9* GetDevice() const { return m_device; }
+		void SetVertexBuffer(uint32_t handle, uint32_t slot, uint32_t stride, uint32_t offset = 0) override {}
+		void SetIndexBuffer(uint32_t handle, bool is32Bit) override {}
+		void SetConstantBuffer(uint32_t handle, uint32_t slot) override {}
+		void SetTexture(uint32_t handle, uint32_t slot) override {}
+		void SetRenderTarget(uint32_t handle, uint32_t depthStencilHandle = 0) override {}
+		void SetProgram(uint32_t handle) override {}
+		void SetVertexDeclaration(uint32_t handle) override {}
 
-    private:
-        HWND                    m_hwnd;
-        IDirect3D9*             m_d3d;
-        IDirect3DDevice9*       m_device;
-        D3DPRESENT_PARAMETERS   m_presentParams;
-        bool                    m_initialized;
-    };
+		void UpdateBuffer(uint32_t handle, const void* data, uint32_t size) override {}
+		void UpdateTexture(uint32_t handle, uint32_t mipLevel, const void* data) override {}
 
-} // namespace USE
+		void DestroyBuffer(uint32_t handle) override {}
+		void DestroyTexture(uint32_t handle) override {}
+		void DestroyShader(uint32_t handle) override {}
+		void DestroyProgram(uint32_t handle) override {}
+		void DestroyVertexDeclaration(uint32_t handle) override {}
+
+		uint32_t GetBackBufferWidth() const override { return m_width; }
+		uint32_t GetBackBufferHeight() const override { return m_height; }
+		bool IsValid() const override { return m_initialized; }
+
+	private:
+		HWND m_hwnd = nullptr;
+		IDirect3D9* m_d3d = nullptr;
+		IDirect3DDevice9* m_device = nullptr;
+		D3DPRESENT_PARAMETERS m_presentParams{};
+		uint32_t m_width = 0;
+		uint32_t m_height = 0;
+		bool m_initialized = false;
+	};
+}

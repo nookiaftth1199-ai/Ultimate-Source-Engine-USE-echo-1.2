@@ -1,107 +1,122 @@
 // ============================================================
-// Ultimate Source Engine - Vulkan Render Device
+// Ultimate Source Engine – Vulkan Render Device
 // ============================================================
-//
-// Implements the IRenderDevice interface using Vulkan.
-// Provides rendering context management and low-level drawing.
-// ============================================================
-
 #pragma once
 
-#include "stdafx.h"
-#include "Renderer/IRenderDevice.h"
-#include "Math/Color.h"
-#include "Math/Matrix4.h"
+#include "../IRenderDevice.h"
 #include <vulkan/vulkan.h>
-#include <SDL.h>
-#include <SDL_vulkan.h>
 #include <vector>
+#include <unordered_map>
 
-namespace USE {
+namespace USE
+{
+	class VKDevice : public IRenderDevice
+	{
+	public:
+		VKDevice();
+		~VKDevice() override;
 
-    class VKDevice : public IRenderDevice {
-    public:
-        VKDevice();
-        virtual ~VKDevice();
+		bool Initialize(void* windowHandle, uint32_t width, uint32_t height, bool vsync) override;
+		void Shutdown() override;
+		void ResizeBackBuffer(uint32_t width, uint32_t height) override;
 
-        // IRenderDevice implementation
-        bool Initialize(Window* window, bool vsync) override;
-        void Shutdown() override;
+		void BeginFrame() override;
+		void EndFrame() override;
+		void Present() override;
 
-        void BeginFrame() override;
-        void EndFrame() override;
-        void Present() override;
+		void SetViewport(uint32_t x, uint32_t y, uint32_t w, uint32_t h) override;
+		void SetScissorRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h) override;
+		void SetDepthStencilState(bool depthTest, bool depthWrite) override;
+		void SetRasterizerState(bool cullBackFaces, bool wireframe) override;
+		void SetBlendState(bool enable) override;
 
-        void Clear(uint32_t flags, const Color& color, float depth, uint32_t stencil) override;
-        void SetViewport(int x, int y, int width, int height) override;
-        void SetScissorRect(int x, int y, int width, int height) override;
-        void EnableScissor(bool enable) override;
+		void Clear(bool color, bool depth, bool stencil,
+			const Vector4& clearColor, float clearDepth, uint8_t clearStencil) override;
 
-        void DrawIndexed(uint32_t indexCount, uint32_t startIndexLocation, uint32_t baseVertexLocation) override;
+		void Draw(PrimitiveType type, uint32_t vertexCount, uint32_t startVertex = 0) override;
+		void DrawIndexed(PrimitiveType type, uint32_t indexCount, uint32_t startIndex = 0,
+			uint32_t baseVertex = 0) override;
+		void DrawInstanced(PrimitiveType type, uint32_t vertexCountPerInstance,
+			uint32_t instanceCount, uint32_t startVertex = 0,
+			uint32_t startInstance = 0) override { /* TODO */
+		}
+		void DrawIndexedInstanced(PrimitiveType type, uint32_t indexCountPerInstance,
+			uint32_t instanceCount, uint32_t startIndex = 0,
+			uint32_t baseVertex = 0,
+			uint32_t startInstance = 0) override { /* TODO */
+		}
+		void DrawIndirect(BufferType buffer, uint32_t offset) override { /* TODO */ }
 
-        // Resource creation stubs
-        bool CreateVertexBuffer(const void* data, size_t size, uint32_t& bufferHandle) override;
-        bool CreateIndexBuffer(const void* data, size_t size, uint32_t& bufferHandle) override;
-        bool CreateTexture2D(int width, int height, TextureFormat format, const void* data, uint32_t& textureHandle) override;
-        bool CreateShader(ShaderType type, const char* source, uint32_t& shaderHandle) override;
+		void Dispatch(uint32_t groupX, uint32_t groupY, uint32_t groupZ) override { /* TODO */ }
 
-        void DestroyBuffer(uint32_t handle) override;
-        void DestroyTexture(uint32_t handle) override;
-        void DestroyShader(uint32_t handle) override;
+		// Resource creation (stubs – real implementation would allocate VkBuffer, etc.)
+		uint32_t CreateVertexBuffer(const void* data, uint32_t size, BufferUsage usage) override { return 0; }
+		uint32_t CreateIndexBuffer(const void* data, uint32_t size, BufferUsage usage, bool is32Bit) override { return 0; }
+		uint32_t CreateConstantBuffer(uint32_t size) override { return 0; }
+		uint32_t CreateStructuredBuffer(const void* data, uint32_t stride, uint32_t count,
+			BufferUsage usage) override {
+			return 0;
+		}
+		uint32_t CreateTexture2D(uint32_t width, uint32_t height, uint32_t mipLevels,
+			TextureFormat format, const void* data) override {
+			return 0;
+		}
+		uint32_t CreateRenderTarget(uint32_t width, uint32_t height, TextureFormat format,
+			bool createDepthStencil) override {
+			return 0;
+		}
+		uint32_t CreateDepthStencil(uint32_t width, uint32_t height, TextureFormat format) override { return 0; }
+		uint32_t CreateShader(ShaderType type, const std::string& source,
+			const std::string& entryPoint) override {
+			return 0;
+		}
+		uint32_t CreateProgram(const std::vector<uint32_t>& shaderHandles) override { return 0; }
+		uint32_t CreateVertexDeclaration(const std::vector<VertexElement>& elements) override { return 0; }
 
-        // Vulkan-specific access
-        VkInstance       GetInstance() const       { return m_instance; }
-        VkPhysicalDevice GetPhysicalDevice() const { return m_physicalDevice; }
-        VkDevice         GetDevice() const         { return m_device; }
-        VkQueue          GetGraphicsQueue() const  { return m_graphicsQueue; }
-        VkQueue          GetPresentQueue() const   { return m_presentQueue; }
-        VkSwapchainKHR   GetSwapchain() const      { return m_swapchain; }
-        VkRenderPass     GetRenderPass() const     { return m_renderPass; }
+		void SetVertexBuffer(uint32_t handle, uint32_t slot, uint32_t stride, uint32_t offset = 0) override {}
+		void SetIndexBuffer(uint32_t handle, bool is32Bit) override {}
+		void SetConstantBuffer(uint32_t handle, uint32_t slot) override {}
+		void SetTexture(uint32_t handle, uint32_t slot) override {}
+		void SetRenderTarget(uint32_t handle, uint32_t depthStencilHandle = 0) override {}
+		void SetProgram(uint32_t handle) override {}
+		void SetVertexDeclaration(uint32_t handle) override {}
 
-    private:
-        // Vulkan handles
-        VkInstance                 m_instance;
-        VkPhysicalDevice           m_physicalDevice;
-        VkDevice                   m_device;
-        VkQueue                    m_graphicsQueue;
-        VkQueue                    m_presentQueue;
-        VkSurfaceKHR               m_surface;
-        VkSwapchainKHR             m_swapchain;
-        VkRenderPass               m_renderPass;
-        VkPipelineLayout           m_pipelineLayout;
-        VkPipeline                 m_pipeline;
-        std::vector<VkImageView>   m_swapchainImageViews;
-        std::vector<VkFramebuffer> m_swapchainFramebuffers;
+		void UpdateBuffer(uint32_t handle, const void* data, uint32_t size) override {}
+		void UpdateTexture(uint32_t handle, uint32_t mipLevel, const void* data) override {}
 
-        VkCommandPool              m_commandPool;
-        std::vector<VkCommandBuffer> m_commandBuffers;
+		void DestroyBuffer(uint32_t handle) override {}
+		void DestroyTexture(uint32_t handle) override {}
+		void DestroyShader(uint32_t handle) override {}
+		void DestroyProgram(uint32_t handle) override {}
+		void DestroyVertexDeclaration(uint32_t handle) override {}
 
-        VkSemaphore                m_imageAvailableSemaphore;
-        VkSemaphore                m_renderFinishedSemaphore;
-        VkFence                    m_inFlightFence;
+		uint32_t GetBackBufferWidth() const override { return m_width; }
+		uint32_t GetBackBufferHeight() const override { return m_height; }
+		bool IsValid() const override { return m_initialized; }
 
-        // Window and surface
-        SDL_Window*                m_window;
-        bool                       m_vsync;
+	private:
+		bool CreateInstance();
+		bool PickPhysicalDevice();
+		bool CreateLogicalDevice();
+		bool CreateSwapchain();
+		void SetupDebugCallback();
 
-        // Initialization helpers
-        bool CreateInstance();
-        bool CreateSurface(SDL_Window* window);
-        bool SelectPhysicalDevice();
-        bool CreateLogicalDevice();
-        bool CreateSwapchain();
-        bool CreateRenderPass();
-        bool CreatePipeline();
-        bool CreateFramebuffers();
-        bool CreateCommandPool();
-        bool CreateCommandBuffers();
-        bool CreateSyncObjects();
-
-        void DestroySwapchain();
-        void Cleanup();
-
-        // Helper to find queue families
-        uint32_t FindQueueFamily(VkQueueFlags flags, bool present = false);
-    };
-
-} // namespace USE
+		VkInstance m_instance = VK_NULL_HANDLE;
+		VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+		VkDevice m_device = VK_NULL_HANDLE;
+		VkQueue m_graphicsQueue = VK_NULL_HANDLE;
+		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
+		VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
+		std::vector<VkImage> m_swapchainImages;
+		VkFormat m_swapchainFormat;
+		VkExtent2D m_swapchainExtent;
+		VkCommandPool m_commandPool = VK_NULL_HANDLE;
+		VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
+		VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
+		VkSemaphore m_renderFinishedSemaphore = VK_NULL_HANDLE;
+		VkFence m_inFlightFence = VK_NULL_HANDLE;
+		bool m_initialized = false;
+		uint32_t m_width = 0;
+		uint32_t m_height = 0;
+	};
+}
