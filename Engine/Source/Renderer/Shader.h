@@ -1,69 +1,38 @@
 // ============================================================
-// Ultimate Source Engine - Shader Interface
+// Ultimate Source Engine – Shader
 // ============================================================
-//
-// Abstract base class for shaders. Provides a common interface
-// for loading, binding, and setting uniforms across all
-// rendering backends.
+// Minimal shader class. Wraps a GPU program.
 // ============================================================
 
 #pragma once
 
-#include "stdafx.h"
-#include "Math/Matrix4.h"
-#include "Math/Vector2.h"
-#include "Math/Vector3.h"
+#include <string>
+#include <vector>
 #include "Math/Vector4.h"
-#include "Math/Color.h"
+#include "Math/Matrix4.h"
 
-namespace USE {
+namespace USE
+{
+	class Shader
+	{
+	public:
+		Shader() = default;
+		~Shader() = default;
 
-    // Shader type (vertex, fragment, geometry)
-    enum class ShaderType {
-        Vertex,
-        Fragment,
-        Geometry,
-        TessellationControl,
-        TessellationEvaluation,
-        Compute
-    };
+		// Compile from source strings.
+		bool Compile(const std::string& vertexSource, const std::string& pixelSource);
 
-    // Shader interface
-    class Shader {
-    public:
-        virtual ~Shader() {}
+		// Bind / unbind.
+		void Bind();
+		void Unbind();
 
-        // Load from file (source or pre‑compiled)
-        virtual bool LoadFromFile(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr) = 0;
+		// Uniform setters.
+		void SetUniform(const char* name, int value);
+		void SetUniform(const char* name, float value);
+		void SetUniform(const char* name, const Vector4& value);
+		void SetUniform(const char* name, const Matrix4& value);
 
-        // Load from source strings
-        virtual bool LoadFromSource(const char* vertexSource, const char* fragmentSource, const char* geometrySource = nullptr) = 0;
-
-        // Bind/unbind the shader for rendering
-        virtual void Bind() = 0;
-        virtual void Unbind() = 0;
-
-        // Check if shader is valid
-        virtual bool IsValid() const = 0;
-
-        // Uniform setters (by name)
-        virtual void SetUniform(const char* name, int value) = 0;
-        virtual void SetUniform(const char* name, float value) = 0;
-        virtual void SetUniform(const char* name, const Vector2& value) = 0;
-        virtual void SetUniform(const char* name, const Vector3& value) = 0;
-        virtual void SetUniform(const char* name, const Vector4& value) = 0;
-        virtual void SetUniform(const char* name, const Color& value) = 0;
-        virtual void SetUniform(const char* name, const Matrix4& value, bool transpose = false) = 0;
-
-        // Uniform array setters
-        virtual void SetUniform(const char* name, int count, const int* values) = 0;
-        virtual void SetUniform(const char* name, int count, const float* values) = 0;
-        virtual void SetUniform(const char* name, int count, const Vector2* values) = 0;
-        virtual void SetUniform(const char* name, int count, const Vector3* values) = 0;
-        virtual void SetUniform(const char* name, int count, const Vector4* values) = 0;
-
-        // Static factory method: creates a shader for the current render backend
-        static Shader* Create();
-    };
-
-} // namespace USE
+	private:
+		uint32_t m_programID = 0;   // GPU handle
+	};
+}

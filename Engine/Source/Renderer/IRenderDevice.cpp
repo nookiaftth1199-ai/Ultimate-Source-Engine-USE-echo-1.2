@@ -1,15 +1,12 @@
 // ============================================================
-// Ultimate Source Engine - Render Device Interface
+// Ultimate Source Engine - Render Device Interface (stub)
 // ============================================================
-//
-// This file is intentionally empty because IRenderDevice is an
-// abstract base class with no implementation. It exists to
-// satisfy compiler/linker requirements.
+// This file exists solely to satisfy the build system. The
+// interface is pure virtual and will be implemented by each
+// backend (GLDevice, DXDevice, VKDevice).
 // ============================================================
 
 #include "stdafx.h"
 #include "IRenderDevice.h"
 
-namespace USE {
-    // No implementation needed
-}
+// Intentionally empty – no implementation for the abstract class.

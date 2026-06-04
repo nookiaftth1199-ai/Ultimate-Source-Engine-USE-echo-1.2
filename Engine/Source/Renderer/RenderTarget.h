@@ -1,67 +1,30 @@
-// ============================================================
-// Ultimate Source Engine - Render Target
-// ============================================================
-//
-// Encapsulates a framebuffer object with color and optional depth/stencil
-// attachments. Provides methods to create, bind, and access the attached textures.
-// ============================================================
-
 #pragma once
+#include "IRenderDevice.h"
+#include "../Math/Vector4.h"
 
-#include "stdafx.h"
-#include "Renderer/Texture.h"
+namespace USE
+{
+	class RenderTarget
+	{
+	public:
+		RenderTarget() = default;
+		~RenderTarget() = default;
 
-namespace USE {
+		bool Create(IRenderDevice* device, uint32_t width, uint32_t height, TextureFormat format, bool createDepthStencil = true);
+		void Destroy();
 
-    class IRenderDevice;
+		uint32_t GetID() const { return m_id; }
+		uint32_t GetWidth() const { return m_width; }
+		uint32_t GetHeight() const { return m_height; }
 
-    class RenderTarget {
-    public:
-        RenderTarget();
-        ~RenderTarget();
+		static RenderTarget Default();
 
-        // Create a render target with given dimensions and formats.
-        // If depthStencil is false, no depth/stencil attachment is created.
-        bool Create(IRenderDevice* device,
-                    int width, int height,
-                    TextureFormat colorFormat = TextureFormat::RGBA8_UNORM,
-                    bool depthStencil = true,
-                    TextureFormat depthFormat = TextureFormat::D24_UNORM_S8_UINT);
+	private:
+		IRenderDevice* m_device = nullptr;
+		uint32_t m_id = 0;
+		uint32_t m_width = 0;
+		uint32_t m_height = 0;
+	};
 
-        // Destroy the render target (releases GPU resources)
-        void Destroy();
-
-        // Bind the render target for rendering (all subsequent draw calls go to it)
-        void Bind();
-
-        // Unbind (restore backbuffer)
-        void Unbind();
-
-        // Clear the attached buffers (color, depth, stencil) using provided values
-        void Clear(uint32_t flags,
-                   const Color& color = Color::Black,
-                   float depth = 1.0f,
-                   uint32_t stencil = 0);
-
-        // Get attached textures (owned by the render target, do not delete)
-        Texture* GetColorTexture() const { return m_colorTexture; }
-        Texture* GetDepthStencilTexture() const { return m_depthStencilTexture; }
-
-        // Get dimensions
-        int GetWidth() const { return m_width; }
-        int GetHeight() const { return m_height; }
-
-        // Check if valid
-        bool IsValid() const { return m_framebufferHandle != 0; }
-
-    private:
-        IRenderDevice* m_device;
-        uint32_t       m_framebufferHandle; // opaque handle from device
-        Texture*       m_colorTexture;
-        Texture*       m_depthStencilTexture;
-        int            m_width;
-        int            m_height;
-        bool           m_ownsTextures; // whether we created the textures (always true for now)
-    };
-
-} // namespace USE
+	inline RenderTarget RenderTarget::Default() { return RenderTarget(); }
+}

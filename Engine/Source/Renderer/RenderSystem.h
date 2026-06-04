@@ -1,113 +1,97 @@
 ﻿// ============================================================
 // Ultimate Source Engine - Render System
 // ============================================================
-//
-// Manages rendering backends, render passes, and high‑level drawing.
-// Supports multiple backends (OpenGL, DirectX9, Vulkan) and advanced features
-// like deferred shading, clustered forward, planar reflections, and post‑processing.
+// High‑level rendering manager. Owns the concrete render device
+// and orchestrates all drawing passes.
 // ============================================================
 
 #pragma once
 
-#include "stdafx.h"
-#include "Math/Color.h"
-#include "Math/Matrix4.h"
-#include "Renderer/IRenderDevice.h"
-#include "Renderer/RenderQueue.h"
-#include "Renderer/RenderStats.h"
-#include "Renderer/RenderTarget.h"
+#include "IRenderDevice.h"
+#include "RenderStats.h"
+#include "RenderTypes.h"
+#include "../Math/Vector4.h"
+#include "../Math/Matrix4.h"
+#include <memory>
+#include <string>
+#include <vector>
 
-namespace USE {
+namespace USE
+{
+	class Window;
+	class Camera;
+	class Scene;
 
-    // Forward declarations
-    class Window;
-    class Camera;
-    class Light;
-    class Scene;
-    class DeferredRenderer;
-    class ClusteredForwardRenderer;
-    class PostProcessManager;
+	enum class RenderBackend
+	{
+		AutoDetect,
+		OpenGL,
+		DirectX9,
+		Vulkan
+	};
 
-    // Render backend enumeration
-    enum class RenderBackend {
-        OpenGL,
-        DirectX9,
-        Vulkan,
-        AutoDetect
-    };
+	enum class RenderingMode
+	{
+		Forward,
+		Deferred,
+		ClusteredForward
+	};
 
-    class RenderSystem {
-    public:
-        RenderSystem();
-        ~RenderSystem();
+	class RenderSystem
+	{
+	public:
+		RenderSystem();
+		~RenderSystem();
 
-        // Initialize with a backend and window
-        bool Initialize(RenderBackend preferredBackend, Window* window, bool vsync = true);
-        void Shutdown();
+		// Initialization & shutdown
+		bool Initialize(RenderBackend backend, Window* window, bool vsync);
+		void Shutdown();
 
-        // Backend management
-        RenderBackend GetBackend() const { return m_backend; }
-        const char* GetBackendName() const;
-        IRenderDevice* GetDevice() const { return m_device; }
+		// Frame lifecycle
+		void BeginFrame();
+		void EndFrame();
+		void Present();
 
-        // Frame control
-        void BeginFrame();
-        void EndFrame();
-        void Present();
+		// Core rendering commands
+		void Clear(int flags, const Color& color, float depth = 1.0f, uint8_t stencil = 0);
+		void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 
-        // Clear buffers
-        void Clear(uint32_t flags, const Color& color, float depth = 1.0f, uint32_t stencil = 0);
+		// High‑level rendering passes
+		void RenderScene(const Scene* scene, const Camera* camera);
+		void RenderUI();
 
-        // Viewport and scissor
-        void SetViewport(int x, int y, int width, int height);
-        void SetScissorRect(int x, int y, int width, int height);
-        void EnableScissor(bool enable);
+		// Feature control
+		void SetRenderingMode(RenderingMode mode) { m_renderingMode = mode; }
+		RenderingMode GetRenderingMode() const { return m_renderingMode; }
 
-        // Rendering entry points
-        void RenderScene(Scene* scene, Camera* camera);
-        void RenderQueue(RenderQueue* queue, Camera* camera, bool transparent = false);
+		// Access to device
+		IRenderDevice* GetDevice() const { return m_device.get(); }
+		RenderStats& GetStats() { return m_stats; }
 
-        // Post‑processing
-        PostProcessManager* GetPostProcessManager() const { return m_postProcessManager; }
+		// Back‑buffer info
+		uint32_t GetWidth() const;
+		uint32_t GetHeight() const;
 
-        // Advanced renderers (1.2 features)
-        DeferredRenderer* GetDeferredRenderer() const { return m_deferredRenderer; }
-        ClusteredForwardRenderer* GetClusteredForwardRenderer() const { return m_clusteredForwardRenderer; }
+	private:
+		bool CreateDevice(RenderBackend backend, void* windowHandle, bool vsync);
+		void DestroyDevice();
+		void RecreateSizeDependentResources();
 
-        // Enable/disable advanced features
-        void SetDeferredEnabled(bool enabled);
-        void SetClusteredForwardEnabled(bool enabled);
-        void SetPlanarReflectionsEnabled(bool enabled);
+		RenderBackend DetectBackend() const;
+		RenderBackend m_requestedBackend = RenderBackend::AutoDetect;
 
-        // Statistics
-        const RenderStats& GetStats() const { return m_stats; }
-        void ResetStats();
+		std::unique_ptr<IRenderDevice> m_device;
 
-        // Factory for device creation
-        static IRenderDevice* CreateDevice(RenderBackend backend, Window* window);
+		// Rendering mode
+		RenderingMode m_renderingMode = RenderingMode::Deferred;
 
-        // VSync control
-        void SetVSync(bool enabled);
-        bool IsVSyncEnabled() const;
+		// Resources
+		uint32_t m_backBufferRT = 0;
+		uint32_t m_backBufferDS = 0;
+		uint32_t m_backBufferWidth = 0;
+		uint32_t m_backBufferHeight = 0;
+		bool m_vsync = false;
 
-    private:
-        IRenderDevice*          m_device;
-        RenderBackend           m_backend;
-        RenderStats             m_stats;
-        bool                    m_initialized;
-
-        // Advanced renderers (1.2)
-        DeferredRenderer*       m_deferredRenderer;
-        ClusteredForwardRenderer* m_clusteredForwardRenderer;
-        PostProcessManager*     m_postProcessManager;
-
-        bool                    m_useDeferred;
-        bool                    m_useClusteredForward;
-        bool                    m_usePlanarReflections;
-
-        // Internal helpers
-        void CreateAdvancedRenderers(int width, int height);
-        void DestroyAdvancedRenderers();
-    };
-
-} // namespace USE
+		RenderStats m_stats;
+	};
+}

@@ -1,80 +1,73 @@
 ﻿// ============================================================
 // Ultimate Source Engine - Deferred Renderer
 // ============================================================
-//
-// Implements deferred shading: geometry pass (G‑buffer) followed by
-// a lighting pass. Supports directional, point, and spot lights.
+// Renders the scene into a G‑Buffer, then applies lighting
+// using the clustered light culling system.
 // ============================================================
 
 #pragma once
 
-#include "stdafx.h"
+#include "IRenderDevice.h"
 #include "Math/Matrix4.h"
-#include "Renderer/RenderTarget.h"
+#include "Renderer/Camera.h"
 #include "Renderer/Material.h"
 #include "Renderer/Mesh.h"
-#include "Renderer/Shader.h"
+#include <vector>
 
-namespace USE {
+namespace USE
+{
+	class Scene;
+	class LightCulling;
 
-    class RenderSystem;
-    class Camera;
-    class Light;
+	class DeferredRenderer
+	{
+	public:
+		DeferredRenderer();
+		~DeferredRenderer();
 
-    class DeferredRenderer {
-    public:
-        DeferredRenderer(RenderSystem* renderer);
-        ~DeferredRenderer();
+		bool Initialize(IRenderDevice* device, uint32_t width, uint32_t height);
+		void Shutdown();
 
-        // Initialize G‑buffer targets and shaders. Returns true on success.
-        bool Initialize(int width, int height);
-        void Shutdown();
+		// Render the scene from the given camera’s point of view.
+		void RenderScene(IRenderDevice* device, const Scene* scene, const Camera* camera);
 
-        // Resize G‑buffer (called when window resizes)
-        void Resize(int width, int height);
+		// Access the G‑Buffer textures (for debugging or post‑processing).
+		uint32_t GetAlbedoTexture()   const { return m_gbufferAlbedo; }
+		uint32_t GetNormalTexture()   const { return m_gbufferNormal; }
+		uint32_t GetRoughnessTexture() const { return m_gbufferRoughness; }
+		uint32_t GetDepthTexture()    const { return m_gbufferDepth; }
 
-        // Perform geometry pass: render all opaque geometry, fill G‑buffer.
-        void GeometryPass();
+		// Set the light culling system (normally owned by RenderSystem).
+		void SetLightCulling(LightCulling* lightCulling) { m_lightCulling = lightCulling; }
 
-        // Perform lighting pass: compute lighting using G‑buffer and output to destination.
-        void LightingPass(RenderTarget* destination);
+	private:
+		bool CreateGBuffer();
+		bool CreateShaders();
+		bool CreateFullscreenQuad();
 
-        // Render transparent objects (forward) after lighting.
-        void RenderTransparent();
+		void GeometryPass(IRenderDevice* device, const Scene* scene, const Camera* camera);
+		void LightingPass(IRenderDevice* device, const Scene* scene, const Camera* camera);
 
-        // Enable/disable deferred rendering (fallback to forward if disabled)
-        void SetEnabled(bool enabled) { m_enabled = enabled; }
-        bool IsEnabled() const { return m_enabled; }
+		IRenderDevice* m_device = nullptr;
+		LightCulling*  m_lightCulling = nullptr;
 
-        // Access G‑buffer textures (for debugging or post‑processing)
-        RenderTarget* GetGBufferTarget(int index) const { return m_gBuffer[index]; }
+		// G‑Buffer
+		uint32_t m_gbufferAlbedo = 0;
+		uint32_t m_gbufferNormal = 0;
+		uint32_t m_gbufferRoughness = 0;
+		uint32_t m_gbufferDepth = 0;
+		uint32_t m_gbufferFBO = 0;   // framebuffer object (if using OpenGL-style)
 
-    private:
-        RenderSystem*   m_renderer;
-        bool            m_enabled;
-        int             m_width, m_height;
+		uint32_t m_width = 0;
+		uint32_t m_height = 0;
 
-        // G‑buffer targets:
-        // 0: Albedo (RGB) + roughness (A)
-        // 1: Normal (XYZ) + metalness (A)
-        // 2: World position (RGB) or depth + stencil
-        // 3: Depth (if not using target 2)
-        RenderTarget*   m_gBuffer[4];
-        RenderTarget*   m_depthTarget;   // depth/stencil (shared with G‑buffer)
+		// Shader programs
+		uint32_t m_geometryProgram = 0;   // writes to G‑Buffer
+		uint32_t m_lightingProgram = 0;   // deferred lighting
 
-        // Fullscreen quad for lighting pass
-        Mesh*           m_fullscreenQuad;
+		// Full‑screen quad for lighting pass
+		uint32_t m_fullscreenVB = 0;
 
-        // Shaders
-        Shader*         m_geometryShader;   // writes to G‑buffer
-        Shader*         m_lightingShader;   // reads G‑buffer, outputs final color
-
-        // Helper: compile shaders, create quad mesh
-        bool CreateShaders();
-        void CreateFullscreenQuad();
-
-        // Apply lighting for a single light (used in lighting pass)
-        void ApplyLight(Light* light, const Matrix4& viewProj);
-    };
-
-} // namespace USE
+		bool m_initialized = false;
+	};
+}
