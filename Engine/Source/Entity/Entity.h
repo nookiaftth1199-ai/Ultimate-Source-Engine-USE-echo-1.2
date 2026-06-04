@@ -1,88 +1,79 @@
 // ============================================================
 // Ultimate Source Engine - Entity
 // ============================================================
-//
-// Base class for all game objects in the world. An entity has a
-// transform and can have multiple components attached.
-// ============================================================
-
 #pragma once
 
-#include "stdafx.h"
-#include "Math/Transform.h"
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <typeindex>
 #include <memory>
-#include <cstdint>
+#include "Component.h"
 
-namespace USE {
+namespace USE
+{
+	class Entity
+	{
+	public:
+		Entity(const std::string& name = "Untitled");
+		~Entity();
 
-    // Forward declarations
-    class Component;
-    class EntityManager;
+		// Name
+		void SetName(const std::string& name) { m_name = name; }
+		const std::string& GetName() const { return m_name; }
 
-    class Entity {
-    public:
-        // Constructor / Destructor
-        Entity(const std::string& name = "Entity");
-        virtual ~Entity();
+		// Component management
+		template <typename T, typename... Args>
+		T* AddComponent(Args&&... args)
+		{
+			static_assert(std::is_base_of<Component, T>::value, "T must derive from Component");
+			auto it = m_components.find(std::type_index(typeid(T)));
+			if (it != m_components.end()) return static_cast<T*>(it->second.get());
 
-        // Unique ID
-        uint64_t GetID() const { return m_id; }
+			auto component = std::make_unique<T>(std::forward<Args>(args)...);
+			component->SetOwner(this);
+			T* ptr = component.get();
+			m_components[std::type_index(typeid(T))] = std::move(component);
+			return ptr;
+		}
 
-        // Name
-        void SetName(const std::string& name) { m_name = name; }
-        const std::string& GetName() const { return m_name; }
+		template <typename T>
+		T* GetComponent()
+		{
+			auto it = m_components.find(std::type_index(typeid(T)));
+			return (it != m_components.end()) ? static_cast<T*>(it->second.get()) : nullptr;
+		}
 
-        // Active flag
-        void SetActive(bool active) { m_active = active; }
-        bool IsActive() const { return m_active; }
-       // In EntityManager.h:
-        void Clear() { m_entities.clear(); }
-        // Transform
-        Transform& GetTransform() { return m_transform; }
-        const Transform& GetTransform() const { return m_transform; }
+		template <typename T>
+		const T* GetComponent() const
+		{
+			auto it = m_components.find(std::type_index(typeid(T)));
+			return (it != m_components.end()) ? static_cast<const T*>(it->second.get()) : nullptr;
+		}
 
-        // Component management
-        template<typename T, typename... Args>
-        T* AddComponent(Args&&... args);
+		template <typename T>
+		bool HasComponent() const { return m_components.find(std::type_index(typeid(T))) != m_components.end(); }
 
-        template<typename T>
-        T* GetComponent();
+		template <typename T>
+		T* GetOrAddComponent()
+		{
+			auto* comp = GetComponent<T>();
+			if (comp) return comp;
+			return AddComponent<T>();
+		}
 
-        template<typename T>
-        void RemoveComponent();
+		// Hierarchy
+		void SetParent(Entity* parent);
+		Entity* GetParent() const { return m_parent; }
+		void AddChild(Entity* child);
+		void RemoveChild(Entity* child);
+		const std::vector<Entity*>& GetChildren() const { return m_children; }
+		uint32_t GetChildrenCount() const { return static_cast<uint32_t>(m_children.size()); }
 
-        void RemoveAllComponents();
-
-        // Called when entity is spawned (after components added)
-        virtual void OnSpawn() {}
-        virtual void OnDespawn() {}
-
-        // Called every frame (if active)
-        virtual void Update(float deltaTime) {}
-
-        // Scene management (optional)
-        void SetParent(Entity* parent);
-        Entity* GetParent() const { return m_parent; }
-        void AddChild(Entity* child);
-        void RemoveChild(Entity* child);
-        const std::vector<Entity*>& GetChildren() const { return m_children; }
-
-    private:
-        uint64_t            m_id;
-        std::string         m_name;
-        bool                m_active;
-        Transform           m_transform;
-
-        std::vector<std::unique_ptr<Component>> m_components;
-
-        Entity*             m_parent;
-        std::vector<Entity*> m_children;
-
-        static uint64_t     s_nextId;
-
-        friend class EntityManager;
-    };
-
-} // namespace USE
+	private:
+		std::string m_name;
+		Entity* m_parent = nullptr;
+		std::vector<Entity*> m_children;
+		std::unordered_map<std::type_index, std::unique_ptr<Component>> m_components;
+	};
+}
