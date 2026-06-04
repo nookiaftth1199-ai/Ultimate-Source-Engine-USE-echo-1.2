@@ -1,66 +1,34 @@
 // ============================================================
 // Ultimate Source Engine - Skeleton
 // ============================================================
-//
-// Represents a skeleton for skinned mesh animation.
-// Contains bones arranged in a hierarchy, with local transforms
-// and inverse bind pose matrices.
-// ============================================================
-
 #pragma once
 
-#include "stdafx.h"
-#include "Math/Transform.h"
-#include "Math/Matrix4.h"
+#include "Bone.h"
 #include <vector>
-#include <string>
 #include <unordered_map>
 
-namespace USE {
+namespace USE
+{
+	class Skeleton
+	{
+	public:
+		Skeleton() = default;
+		~Skeleton() = default;
 
-    struct Bone {
-        std::string name;               // Bone name (for identification)
-        int         parentIndex;         // Index of parent bone (-1 for root)
-        Transform   localTransform;      // Transform relative to parent
-        Matrix4     inverseBindPose;     // Inverse of global bind pose (used for skinning)
+		void AddBone(const Bone& bone);
+		uint32_t GetBoneCount() const { return static_cast<uint32_t>(m_bones.size()); }
+		const Bone& GetBone(uint32_t index) const { return m_bones[index]; }
+		Bone& GetBone(uint32_t index) { return m_bones[index]; }
 
-        Bone();
-        Bone(const std::string& name, int parent);
-    };
+		int32_t GetBoneIndex(const std::string& name) const;
+		const std::string& GetBoneName(uint32_t index) const;
 
-    class Skeleton {
-    public:
-        Skeleton();
-        ~Skeleton();
+		// Returns the parent index for a bone, or -1.
+		int32_t GetBoneParent(uint32_t index) const;
+		const std::vector<Bone>& GetBones() const { return m_bones; }
 
-        // Clear all bones
-        void Clear();
-
-        // Add a new bone (returns its index)
-        int AddBone(const Bone& bone);
-
-        // Access bones
-        int GetBoneCount() const { return (int)m_bones.size(); }
-        Bone* GetBone(int index);
-        const Bone* GetBone(int index) const;
-
-        // Find bone index by name (returns -1 if not found)
-        int FindBoneIndex(const std::string& name) const;
-
-        // Compute global transforms for all bones given an array of local transforms.
-        // The input array 'localTransforms' must have the same size as bone count.
-        // The result is stored in 'outGlobalTransforms' (also sized bone count).
-        void ComputeGlobalTransforms(const Transform* localTransforms,
-                                     Matrix4* outGlobalTransforms) const;
-
-        // Compute skinning matrices (global * inverseBindPose) for all bones.
-        // This is what you upload to the shader for skinned animation.
-        void ComputeSkinningMatrices(const Matrix4* globalTransforms,
-                                     Matrix4* outSkinningMatrices) const;
-
-    private:
-        std::vector<Bone> m_bones;
-        std::unordered_map<std::string, int> m_nameToIndex;
-    };
-
-} // namespace USE
+	private:
+		std::vector<Bone> m_bones;
+		std::unordered_map<std::string, uint32_t> m_nameToIndex;
+	};
+}

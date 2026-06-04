@@ -1,34 +1,20 @@
-// ============================================================
-// Ultimate Source Engine - Animation System
-// ============================================================
-//
-// System that updates animation components, advances animation time,
-// and computes bone transforms for skeletal meshes.
-// ============================================================
-
+// AnimationSystem.h
 #pragma once
+#include "Entity/Systems/SystemBase.h"
+#include "Entity/EntityManager.h"
+#include <vector>
 
-#include "stdafx.h"
-#include "Entity/SystemManager.h"
+namespace USE
+{
+	class Animator;
 
-namespace USE {
+	class AnimationSystem : public SystemBase
+	{
+	public:
+		explicit AnimationSystem(EntityManager* entityManager);
+		void Update(float deltaTime) override;
 
-    // Forward declarations
-    class AnimationComponent;
-
-    class AnimationSystem : public ISystem {
-    public:
-        AnimationSystem();
-        virtual ~AnimationSystem();
-
-        // ISystem interface
-        void Initialize(EntityManager* entityManager, ComponentManager* componentManager) override;
-        void Update(float deltaTime) override;
-        void Shutdown() override;
-
-    private:
-        EntityManager*    m_entityManager;
-        ComponentManager* m_componentManager;
-    };
-
-} // namespace USE
+	private:
+		EntityManager* m_entityManager = nullptr;
+	};
+}
