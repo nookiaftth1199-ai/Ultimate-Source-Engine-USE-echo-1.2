@@ -1,176 +1,151 @@
 // ============================================================
 // Ultimate Source Engine - Physics System Interface
 // ============================================================
-//
-// Abstract interface for physics backends. Supports rigid bodies,
-// soft bodies, vehicles, and advanced features.
+// Abstract interface for the physics backend.
+// All physics implementations (Jolt, Bullet, Havok, etc.)
+// must derive from this class.
 // ============================================================
 
 #pragma once
 
-#include "stdafx.h"
 #include "Math/Vector3.h"
-#include "Math/Matrix4.h"
+#include "Math/Quaternion.h"
 #include <cstdint>
 #include <vector>
+#include <string>
 
-namespace USE {
+namespace USE
+{
+	// -----------------------------------------------------------------
+	// Enums
+	// -----------------------------------------------------------------
+	enum class CollisionShapeType
+	{
+		Box,
+		Sphere,
+		Capsule,
+		ConvexHull,
+		TriangleMesh,
+		Compound,
+	};
 
-    // -----------------------------------------------------------------
-    // Physics backend types
-    // -----------------------------------------------------------------
-    enum class PhysicsBackend {
-        Bullet,
-        PhysX,
-        Jolt,
-        None
-    };
+	enum class JointType
+	{
+		Fixed,
+		Hinge,
+		Slider,
+		BallAndSocket,
+		Distance,
+	};
 
-    // -----------------------------------------------------------------
-    // Common physics settings
-    // -----------------------------------------------------------------
-    struct PhysicsWorldSettings {
-        Vector3 gravity = Vector3(0, -9.81f, 0);
-        float fixedTimeStep = 1.0f / 60.0f;
-        int maxSubSteps = 5;
-        bool enableMultithreading = true;
-    };
+	// -----------------------------------------------------------------
+	// Descriptor structures
+	// -----------------------------------------------------------------
+	struct RigidBodyDesc
+	{
+		Vector3     position = { 0, 0, 0 };
+		Quaternion  rotation = Quaternion::Identity();
+		float       mass = 1.0f;
+		bool        isStatic = false;
+		float       friction = 0.5f;
+		float       restitution = 0.0f;
+		float       linearDamping = 0.0f;
+		float       angularDamping = 0.0f;
 
-    // -----------------------------------------------------------------
-    // Rigid body description
-    // -----------------------------------------------------------------
-    struct RigidBodyDesc {
-        float mass = 1.0f;
-        float friction = 0.5f;
-        float restitution = 0.2f;
-        float linearDamping = 0.0f;
-        float angularDamping = 0.0f;
-        Matrix4 initialTransform = Matrix4::Identity();
-        bool isKinematic = false;
-        bool isStatic = false;
-        bool enableCCD = false;
-        uint32_t collisionLayer = 0;
-        uint32_t collisionMask = 0xFFFFFFFF;
-    };
+		// Collision shape description.
+		CollisionShapeType shapeType = CollisionShapeType::Box;
+		Vector3  halfExtents = { 1, 1, 1 };   // for Box
+		float    radius = 1.0f;           // for Sphere / Capsule
+		float    height = 1.0f;           // for Capsule
+		// For convex hull / trimesh, the actual data is stored elsewhere (e.g. a shared shape resource).
+	};
 
-    // -----------------------------------------------------------------
-    // Collision shape types
-    // -----------------------------------------------------------------
-    enum class CollisionShapeType {
-        Sphere,
-        Box,
-        Capsule,
-        Cylinder,
-        ConvexHull,
-        TriangleMesh,
-        Compound
-    };
+	struct CharacterControllerDesc
+	{
+		Vector3  position = { 0, 0, 0 };
+		float    radius = 0.5f;
+		float    height = 1.8f;
+		float    stepHeight = 0.3f;
+	};
 
-    struct CollisionShape {
-        CollisionShapeType type;
-        union {
-            struct { float radius; } sphere;
-            struct { Vector3 halfExtents; } box;
-            struct { float radius; float height; } capsule;
-            struct { float radius; float height; } cylinder;
-        };
-        void* userData = nullptr; // for hull/mesh data
-    };
+	struct VehicleDesc
+	{
+		// Basic vehicle params (placeholder for a full vehicle setup).
+		std::string type;    // "wheeled", "tracked", etc.
+		// Additional data would be filled by the implementation.
+	};
 
-    // -----------------------------------------------------------------
-    // Soft body description
-    // -----------------------------------------------------------------
-    struct SoftBodyDesc {
-        float mass = 1.0f;
-        float pressure = 0.0f;
-        float volumeStiffness = 1.0f;
-        float bendingStiffness = 0.1f;
-        std::vector<Vector3> vertices;          // initial vertex positions
-        std::vector<uint32_t> indices;          // triangle indices
-        // ... many more parameters possible
-    };
+	struct JointDesc
+	{
+		JointType  type = JointType::Fixed;
+		uint32_t   bodyA = 0;
+		uint32_t   bodyB = 0;
+		Vector3    pivotA = { 0, 0, 0 };
+		Vector3    pivotB = { 0, 0, 0 };
+		Vector3    axisA = { 1, 0, 0 };
+		Vector3    axisB = { 1, 0, 0 };
+		float      minLimit = 0.0f;
+		float      maxLimit = 0.0f;
+	};
 
-    // -----------------------------------------------------------------
-    // Vehicle description (simplified)
-    // -----------------------------------------------------------------
-    struct VehicleDesc {
-        float chassisMass = 800.0f;
-        float engineForce = 2000.0f;
-        float brakingForce = 1000.0f;
-        float steeringAngle = 0.5f; // radians
-        struct Wheel {
-            Vector3 connectionPoint;  // relative to chassis
-            Vector3 wheelDirection;   // usually (0,-1,0)
-            Vector3 wheelAxle;        // usually (1,0,0) or (-1,0,0)
-            float suspensionRestLength = 0.5f;
-            float suspensionStiffness = 20.0f;
-            float suspensionDamping = 2.0f;
-            float wheelRadius = 0.3f;
-            bool isFrontWheel = true;
-        };
-        std::vector<Wheel> wheels;
-    };
+	struct RaycastResult
+	{
+		bool     hit = false;
+		Vector3  position;
+		Vector3  normal;
+		float    distance = 0.0f;
+		uint32_t bodyHandle = 0;
+	};
 
-    // -----------------------------------------------------------------
-    // Raycast result
-    // -----------------------------------------------------------------
-    struct RaycastResult {
-        bool hit = false;
-        float fraction = 1.0f;
-        Vector3 point;
-        Vector3 normal;
-        uint32_t bodyId = 0;
-        void* userData = nullptr;
-    };
+	// -----------------------------------------------------------------
+	// Pure virtual interface
+	// -----------------------------------------------------------------
+	class IPhysicsSystem
+	{
+	public:
+		virtual ~IPhysicsSystem() = default;
 
-    // -----------------------------------------------------------------
-    // Physics system interface
-    // -----------------------------------------------------------------
-    class IPhysicsSystem {
-    public:
-        virtual ~IPhysicsSystem() = default;
+		// Initialise / shutdown the physics world.
+		virtual bool Initialize() = 0;
+		virtual void Shutdown() = 0;
 
-        // World management
-        virtual bool Initialize(const PhysicsWorldSettings& settings) = 0;
-        virtual void Shutdown() = 0;
-        virtual void Update(float deltaTime) = 0;
+		// Advance the simulation by deltaTime seconds.
+		virtual void Update(float deltaTime) = 0;
 
-        // Rigid bodies
-        virtual uint32_t CreateRigidBody(const RigidBodyDesc& desc,
-                                          const CollisionShape& shape) = 0;
-        virtual void DestroyRigidBody(uint32_t bodyId) = 0;
+		// --- Rigid bodies ---
+		virtual uint32_t CreateRigidBody(const RigidBodyDesc& desc) = 0;
+		virtual void DestroyRigidBody(uint32_t handle) = 0;
 
-        virtual Matrix4 GetBodyTransform(uint32_t bodyId) const = 0;
-        virtual void SetBodyTransform(uint32_t bodyId, const Matrix4& transform) = 0;
+		virtual void SetRigidBodyTransform(uint32_t handle, const Vector3& pos, const Quaternion& rot) = 0;
+		virtual void GetRigidBodyTransform(uint32_t handle, Vector3& pos, Quaternion& rot) const = 0;
 
-        virtual void ApplyForce(uint32_t bodyId, const Vector3& force,
-                                const Vector3* relPos = nullptr) = 0;
-        virtual void ApplyImpulse(uint32_t bodyId, const Vector3& impulse,
-                                  const Vector3* relPos = nullptr) = 0;
-        virtual void SetLinearVelocity(uint32_t bodyId, const Vector3& velocity) = 0;
-        virtual void SetAngularVelocity(uint32_t bodyId, const Vector3& velocity) = 0;
+		virtual void ApplyForceToRigidBody(uint32_t handle, const Vector3& force) = 0;
+		virtual void SetRigidBodyLinearVelocity(uint32_t handle, const Vector3& vel) = 0;
 
-        // Soft bodies
-        virtual uint32_t CreateSoftBody(const SoftBodyDesc& desc) = 0;
-        virtual void DestroySoftBody(uint32_t bodyId) = 0;
-        virtual void GetSoftBodyVertices(uint32_t bodyId, std::vector<Vector3>& outVertices) const = 0;
+		// --- Character controllers ---
+		virtual uint32_t CreateCharacterController(const CharacterControllerDesc& desc) = 0;
+		virtual void DestroyCharacterController(uint32_t handle) = 0;
 
-        // Vehicles
-        virtual uint32_t CreateVehicle(const VehicleDesc& desc, uint32_t chassisBodyId) = 0;
-        virtual void DestroyVehicle(uint32_t vehicleId) = 0;
-        virtual void SetVehicleInput(uint32_t vehicleId, float throttle, float brake, float steer) = 0;
+		// --- Vehicles ---
+		virtual uint32_t CreateVehicle(const VehicleDesc& desc) = 0;
+		virtual void DestroyVehicle(uint32_t handle) = 0;
 
-        // Raycasting
-        virtual RaycastResult Raycast(const Vector3& origin,
-                                      const Vector3& direction,
-                                      float maxDistance,
-                                      uint32_t layerMask = 0xFFFFFFFF) = 0;
+		// --- Joints ---
+		virtual uint32_t CreateJoint(const JointDesc& desc) = 0;
+		virtual void DestroyJoint(uint32_t handle) = 0;
 
-        // Debug drawing
-        virtual void DebugDraw() = 0;
+		// --- Raycasting ---
+		virtual bool Raycast(const Vector3& origin, const Vector3& direction,
+			float maxDist, RaycastResult& outResult) = 0;
 
-        // Get backend name
-        virtual const char* GetBackendName() const = 0;
-    };
+		// --- Global physics settings ---
+		virtual void SetGravity(const Vector3& gravity) = 0;
+		virtual Vector3 GetGravity() const = 0;
 
-} // namespace USE
+		// --- Debug rendering ---
+		virtual void DebugDraw() {}
+
+		// --- Memory statistics ---
+		virtual uint32_t GetBodyCount() const { return 0; }
+	};
+}
