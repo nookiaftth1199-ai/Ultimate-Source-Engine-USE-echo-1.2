@@ -1,79 +1,43 @@
-// ============================================================
+﻿// ============================================================
 // Ultimate Source Engine - Audio System
 // ============================================================
-//
-// Manages audio playback using OpenAL. Provides methods to
-// load sounds, play them, control listener properties, and
-// manage sound sources.
-// ============================================================
-
 #pragma once
-
-#include "stdafx.h"
-#include "Math/Vector3.h"
-#include <string>
+#include "Audio/IAudioDevice.h"
 #include <memory>
-#include <vector>
+#include <string>
+#include <cstdint>
 
-namespace USE {
+namespace USE
+{
+	class AudioSystem
+	{
+	public:
+		AudioSystem();
+		~AudioSystem();
 
-    // Forward declarations
-    class SoundBuffer;
-    class SoundSource;
+		bool Initialize();
+		void Shutdown();
+		void Update(float deltaTime);
 
-    // Audio backend (only OpenAL for now)
-    enum class AudioBackend {
-        OpenAL,
-        None
-    };
+		// Play a sound file (auto‑creates source, auto‑unloads when done).
+		uint32_t PlaySound(const std::string& filePath, bool loop = false,
+			float volume = 1.0f, float pitch = 1.0f);
 
-    class AudioSystem {
-    public:
-        AudioSystem();
-        ~AudioSystem();
+		// Stop and destroy a playing sound.
+		void StopSound(uint32_t sourceHandle);
 
-        // Initialize with optional backend (default OpenAL)
-        bool Initialize(AudioBackend backend = AudioBackend::OpenAL);
-        void Shutdown();
+		// Set global listener attributes (usually updated from camera).
+		void SetListenerPosition(float x, float y, float z);
+		void SetListenerOrientation(const Vector3& forward, const Vector3& up);
+		void SetMasterVolume(float volume);
 
-        // Update (must be called once per frame to manage streaming etc.)
-        void Update(float deltaTime);
+		// Change to a different backend (e.g., switch to FMOD when available).
+		void SetDevice(std::unique_ptr<IAudioDevice> device);
 
-        // Load a sound from file (returns a SoundBuffer handle)
-        std::shared_ptr<SoundBuffer> LoadSound(const std::string& filename);
-
-        // Create a sound source (to play a sound buffer)
-        std::shared_ptr<SoundSource> CreateSource();
-
-        // Listener properties (global)
-        void SetListenerPosition(const Vector3& position);
-        void SetListenerVelocity(const Vector3& velocity);
-        void SetListenerOrientation(const Vector3& forward, const Vector3& up);
-        void SetListenerGain(float gain);
-
-        // Global pause/resume all sounds
-        void PauseAll();
-        void ResumeAll();
-        void StopAll();
-
-        // Get statistics
-        int GetActiveSourceCount() const;
-        int GetTotalSourceCount() const;
-
-        // Check if system is valid
-        bool IsValid() const { return m_initialized; }
-
-    private:
-        bool m_initialized;
-        AudioBackend m_backend;
-        void* m_device;   // OpenAL device handle (alcDevice)
-        void* m_context;  // OpenAL context
-
-        std::vector<std::shared_ptr<SoundBuffer>> m_buffers;
-        std::vector<std::shared_ptr<SoundSource>> m_sources;
-
-        // Internal: clean up finished sources
-        void CleanupSources();
-    };
-
-} // namespace USE
+	private:
+		std::unique_ptr<IAudioDevice> m_device;
+		// Map from source handle to buffer handle, so we can unload when stopped.
+		std::unordered_map<uint32_t, uint32_t> m_playingBuffers;
+		uint32_t m_nextSource = 1;
+	};
+}
