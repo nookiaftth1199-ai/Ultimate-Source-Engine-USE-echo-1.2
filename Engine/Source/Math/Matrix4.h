@@ -190,7 +190,7 @@ namespace USE {
                 (m[2][0] * p.x + m[2][1] * p.y + m[2][2] * p.z + m[2][3]) * invW
             );
         }
-        return Vector3::Zero;
+		return Vector3::Zero();
     }
 
     Vector3 Matrix4::TransformVector(const Vector3& v) const {

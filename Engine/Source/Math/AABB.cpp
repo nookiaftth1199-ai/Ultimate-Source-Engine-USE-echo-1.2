@@ -147,7 +147,7 @@ namespace USE {
             case 5: return Vector3(max.x, min.y, max.z);
             case 6: return Vector3(min.x, max.y, max.z);
             case 7: return Vector3(max.x, max.y, max.z);
-            default: return Vector3::Zero;
+            default: return Vector3::Zero();
         }
     }
 
