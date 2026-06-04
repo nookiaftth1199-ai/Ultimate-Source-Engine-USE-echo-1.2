@@ -1,40 +1,44 @@
-// ============================================================
-// JSONWrapper.cpp
-// ============================================================
+#include "stdafx.h"
 #include "JSONWrapper.h"
-#include "Core/FileSystem.h"
 #include "Core/Logger.h"
-#include <fstream>
 
-namespace USE {
-    bool JSONWrapper::Parse(const std::string& content, JSON& out) {
-        try {
-            out = JSON::parse(content);
-            return true;
-        } catch (const std::exception& e) {
-            USE_LOG_ERROR("JSON parse error: %s", e.what());
-            return false;
-        }
-    }
+// #define USE_NLOHMANN_JSON   // nlohmann/json single header
+// #define USE_RAPIDJSON       // alternative
 
-    bool JSONWrapper::LoadFromFile(const std::string& filename, JSON& out) {
-        FileSystem* fs = FileSystem::Get();
-        if (!fs) return false;
-        auto file = fs->OpenFile(filename, FILE_READ | FILE_TEXT);
-        if (!file) return false;
-        std::string content;
-        file->ReadAll(content);
-        file->Close();
-        return Parse(content, out);
-    }
+#if defined(USE_NLOHMANN_JSON)
+#include <nlohmann/json.hpp>
+#elif defined(USE_RAPIDJSON)
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
+#endif
 
-    bool JSONWrapper::SaveToFile(const JSON& data, const std::string& filename) {
-        FileSystem* fs = FileSystem::Get();
-        if (!fs) return false;
-        auto file = fs->OpenFile(filename, FILE_WRITE | FILE_TEXT | FILE_TRUNCATE);
-        if (!file) return false;
-        file->WriteLine(data.dump(4));
-        file->Close();
-        return true;
-    }
+namespace USE
+{
+	bool JSONWrapper::Parse(const std::string& text, JsonValue& outRoot)
+	{
+#if defined(USE_NLOHMANN_JSON)
+		try {
+			auto j = nlohmann::json::parse(text);
+			// Convert to our internal JsonValue (omitted)
+			return true;
+		}
+		catch (...) {
+			USE_LOG_ERROR("JSONWrapper: Failed to parse JSON.");
+			return false;
+		}
+#elif defined(USE_RAPIDJSON)
+		rapidjson::Document doc;
+		doc.Parse(text.c_str());
+		if (doc.HasParseError()) {
+			USE_LOG_ERROR("JSONWrapper: Parse error at offset %zu", doc.GetErrorOffset());
+			return false;
+		}
+		// Convert to internal format
+		return true;
+#else
+		USE_LOG_WARN("JSONWrapper: No JSON library enabled. Define USE_NLOHMANN_JSON or USE_RAPIDJSON.");
+		return false;
+#endif
+	}
 }

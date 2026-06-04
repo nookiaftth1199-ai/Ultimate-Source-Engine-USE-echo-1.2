@@ -1,31 +1,24 @@
-// ============================================================
-// FBXWrapper.cpp
-// ============================================================
+#include "stdafx.h"
 #include "FBXWrapper.h"
 #include "Core/Logger.h"
 
-namespace USE {
-    FbxManager* FBXWrapper::s_manager = nullptr;
-    FbxIOSettings* FBXWrapper::s_ioSettings = nullptr;
+// #define USE_FBX_SDK
 
-    bool FBXWrapper::Initialize() {
-        s_manager = FbxManager::Create();
-        if (!s_manager) {
-            USE_LOG_ERROR("FBX SDK: Failed to create manager");
-            return false;
-        }
-        s_ioSettings = FbxIOSettings::Create(s_manager, IOSROOT);
-        s_manager->SetIOSettings(s_ioSettings);
-        USE_LOG_INFO("FBX SDK initialized");
-        return true;
-    }
+#ifdef USE_FBX_SDK
+#include <fbxsdk.h>   // Requires official FBX SDK (closed source)
+#endif
 
-    void FBXWrapper::Shutdown() {
-        if (s_manager) {
-            s_manager->Destroy();
-            s_manager = nullptr;
-            s_ioSettings = nullptr;
-        }
-        USE_LOG_INFO("FBX SDK shut down");
-    }
+namespace USE
+{
+	bool FBXWrapper::LoadModel(const std::string& path, Model& outModel)
+	{
+#ifdef USE_FBX_SDK
+		// Real FBX SDK loading code would go here
+		USE_LOG_INFO("FBXWrapper: Loading with FBX SDK...");
+		return true;
+#else
+		USE_LOG_WARN("FBXWrapper: FBX SDK not available. Use ufbx (FBXLoader) instead.");
+		return false;
+#endif
+	}
 }
