@@ -4,36 +4,26 @@
 
 #include "stdafx.h"
 #include "FrustumCuller.h"
+#include "Scene.h"
+#include "Entity/Components/RenderComponent.h"
+#include "Math/Frustum.h"
 
-namespace USE {
+namespace USE
+{
+	FrustumCuller::FrustumCuller() = default;
+	FrustumCuller::~FrustumCuller() = default;
 
-    FrustumCuller::FrustumCuller()
-    {
-    }
-
-    FrustumCuller::FrustumCuller(const Frustum& frustum)
-        : m_frustum(frustum)
-    {
-    }
-
-    void FrustumCuller::SetFromMatrix(const Matrix4& viewProj)
-    {
-        m_frustum.ExtractFromMatrix(viewProj);
-    }
-
-    bool FrustumCuller::IsVisible(const Vector3& point) const
-    {
-        return m_frustum.ContainsPoint(point);
-    }
-
-    bool FrustumCuller::IsVisible(const Vector3& center, float radius) const
-    {
-        return m_frustum.ContainsSphere(center, radius);
-    }
-
-    bool FrustumCuller::IsVisible(const AABB& aabb) const
-    {
-        return m_frustum.ContainsAABB(aabb);
-    }
-
-} // namespace USE
+	void FrustumCuller::Cull(const Frustum& frustum, const std::vector<Entity*>& entities,
+		std::vector<Entity*>& outVisible)
+	{
+		outVisible.clear();
+		for (auto* entity : entities)
+		{
+			auto* renderComp = entity->GetComponent<RenderComponent>();
+			if (!renderComp) continue;
+			// Simple bounding sphere check – you can extend with AABB
+			if (frustum.ContainsSphere(renderComp->GetBoundsCenter(), renderComp->GetBoundsRadius()))
+				outVisible.push_back(entity);
+		}
+	}
+}
